@@ -101,17 +101,17 @@ function migrate(db) {
   // Step 3: Reassign simulation chapter_ids (using actual sim_keys from seed.js)
   // ============================================================
 
-  // Ch1 (绪论): basic image ops from old Ch1
-  for (const key of ['gray', 'channel-split', 'histogram', 'resize', 'crop'])
+  // Ch1 (绪论): basic image ops from old Ch1 (gray, channel-split only)
+  for (const key of ['gray', 'channel-split'])
     db.exec(`UPDATE simulations SET chapter_id=1 WHERE sim_key='${key}'`);
   // Ch2 (基础): noise/quantization from old Ch1
   for (const key of ['noise', 'quantize'])
     db.exec(`UPDATE simulations SET chapter_id=2 WHERE sim_key='${key}'`);
   // Ch3 (基本运算): geometric transforms + gray-level ops from old Ch1
-  for (const key of ['translate', 'rotate', 'flip', 'affine', 'projection', 'invert', 'gamma', 'contrast-stretch', 'threshold'])
+  for (const key of ['translate', 'rotate', 'flip', 'affine', 'projection', 'invert', 'resize', 'crop', 'threshold'])
     db.exec(`UPDATE simulations SET chapter_id=3 WHERE sim_key='${key}'`);
-  // Ch4 (空间域增强): spatial filtering + enhancement from old Ch2 + old Ch4
-  for (const key of ['smooth', 'sharpen', 'denoise', 'gradient', 'directional', 'emboss', 'hist-eq', 'clahe', 'log-transform', 'unsharp'])
+  // Ch4 (空间域增强): spatial filtering + enhancement from old Ch2 + old Ch4 + histogram/gamma/contrast-stretch
+  for (const key of ['smooth', 'sharpen', 'denoise', 'gradient', 'directional', 'emboss', 'hist-eq', 'clahe', 'log-transform', 'unsharp', 'histogram', 'gamma', 'contrast-stretch'])
     db.exec(`UPDATE simulations SET chapter_id=4 WHERE sim_key='${key}'`);
   // Ch5 (频率域): from old Ch3
   for (const key of ['fft', 'lowpass-freq', 'highpass-freq', 'bandpass-freq', 'homomorphic'])
