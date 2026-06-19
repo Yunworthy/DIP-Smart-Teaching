@@ -652,6 +652,20 @@ async function seed() {
     ['case-skin-detection', '肤色分割', 'RGB→YCbCr颜色空间转换→阈值分割→形态学清理→人脸区域提取', 10, 'comprehensive',
      J([{key:'cbMin',label:'Cb下限',type:'range',min:77,max:100,step:1,default:85},{key:'cbMax',label:'Cb上限',type:'range',min:110,max:140,step:1,default:127},{key:'crMin',label:'Cr下限',type:'range',min:125,max:145,step:1,default:135},{key:'crMax',label:'Cr上限',type:'range',min:150,max:180,step:1,default:168}]),
      'assets/samples/logs.jpg', '肤色检测是人脸定位的第一步。YCbCr颜色空间中肤色在Cb(77-127)和Cr(133-173)范围内相对集中，不受亮度影响。通过阈值分割可快速定位可能的皮肤区域。'],
+
+    // === Chapter 7: 图像压缩编码 (新增) ===
+    ['huffman', '霍夫曼编码', '基于灰度概率统计构建霍夫曼树，生成变长前缀码实现图像无损压缩，展示编码表和压缩效率', 5, 'basic',
+     J([{key:'showTopN',label:'显示编码表前N项',type:'range',min:5,max:50,step:5,default:20}]),
+     'assets/samples/rice.bmp', '霍夫曼编码是最优的无损前缀编码。通过最小堆构建霍夫曼树，高频灰度值获得短码，低频获得长码，平均码长趋近信息熵。'],
+    ['shannon-fano', '费诺编码', '基于符号概率的递归二分法生成费诺编码，与霍夫曼编码对比压缩效率', 5, 'basic',
+     J([{key:'showTopN',label:'显示编码表前N项',type:'range',min:5,max:50,step:5,default:20},{key:'compareHuffman',label:'与霍夫曼对比',type:'select',options:['关','开'],default:'开'}]),
+     'assets/samples/rice.bmp', '费诺编码采用自顶向下的递归分组策略，将符号集分成频率和尽量相等的两组。虽不如霍夫曼编码最优，但实现更直观，适合教学理解。'],
+    ['rle', '游程编码', '将连续重复的像素值编码为(值,长度)对，实现简单高效的图像压缩，支持不同扫描方向和灰度容差', 5, 'basic',
+     J([{key:'tolerance',label:'灰度容差',type:'range',min:0,max:20,step:1,default:0},{key:'direction',label:'扫描方向',type:'select',options:['水平(逐行)','垂直(逐列)','Zigzag'],default:'水平(逐行)'}]),
+     'assets/samples/rice.bmp', '游程编码(RLE)是二值图像和简单区域图像的高效压缩方法。BMP格式原生支持RLE压缩。通过调整容差可控制有损/无损编码。'],
+    ['bitplane', '位平面编码', '将灰度图像分解为8个位平面，分析各位平面的信息含量，支持格雷码位平面分解', 5, 'basic',
+     J([{key:'selectedPlane',label:'选择位平面',type:'range',min:0,max:7,step:1,default:7},{key:'layout',label:'布局',type:'select',options:['2x4网格','单独平面','格雷码'],default:'2x4网格'}]),
+     'assets/samples/rice.bmp', '位平面编码将图像按比特位分解为8个二值图像。高位平面包含主要视觉信息，低位平面包含细节和噪声。格雷码变换可改善低位平面的空间连续性。'],
   ];
 
   for (const r of sims) insertSim.run(...r);

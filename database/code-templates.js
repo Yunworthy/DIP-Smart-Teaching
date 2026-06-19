@@ -1334,6 +1334,185 @@ axes[0].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)); axes[0].set_title('原图'
 axes[1].imshow(mask, cmap='gray'); axes[1].set_title('肤色掩膜'); axes[1].axis('off')
 axes[2].imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB)); axes[2].set_title('分割结果'); axes[2].axis('off')
 savefig(fig, 'result')`,
+
+  // --- Chapter 7: 图像压缩编码 ---
+  'huffman': `# 霍夫曼编码图像压缩
+import heapq
+from collections import Counter
+
+img = imread_gray()
+flat = img.flatten()
+freq = Counter(flat.tolist())
+total = len(flat)
+
+# 计算信息熵
+entropy = -sum((f/total) * np.log2(f/total) for f in freq.values())
+
+# 构建霍夫曼树
+heap = [[f, [sym, ""]] for sym, f in freq.items()]
+heapq.heapify(heap)
+while len(heap) > 1:
+    lo = heapq.heappop(heap)
+    hi = heapq.heappop(heap)
+    for pair in lo[1:]:
+        pair[1] = '0' + pair[1]
+    for pair in hi[1:]:
+        pair[1] = '1' + pair[1]
+    heapq.heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+codes = dict(heapq.heappop(heap)[1:])
+
+# 编码
+encoded = ''.join(codes[int(p)] for p in flat)
+avg_bits = len(encoded) / total
+ratio = 8.0 / avg_bits
+efficiency = entropy / avg_bits * 100
+
+print(f"信息熵: {entropy:.3f} bits")
+print(f"平均码长: {avg_bits:.3f} bits")
+print(f"压缩比: {ratio:.2f}:1")
+print(f"编码效率: {efficiency:.1f}%")
+print(f"原始大小: {total * 8} bits")
+print(f"压缩大小: {len(encoded)} bits")
+
+# 可视化
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+axes[0].imshow(img, cmap='gray'); axes[0].set_title('原图'); axes[0].axis('off')
+axes[1].bar(range(256), [freq.get(i,0) for i in range(256)], width=1, color='#6366f1')
+axes[1].set_title(f'灰度直方图 (共{len(freq)}个灰度级)')
+plt.suptitle(f'霍夫曼编码 | 压缩比: {ratio:.2f}:1 | 效率: {efficiency:.1f}%')
+savefig(fig, 'result')`,
+
+  'shannon-fano': `# 费诺(Shannon-Fano)编码图像压缩
+from collections import Counter
+
+img = imread_gray()
+flat = img.flatten()
+freq = Counter(flat.tolist())
+total = len(flat)
+
+# 按频率降序排列
+sorted_syms = sorted(freq.keys(), key=lambda s: freq[s], reverse=True)
+
+# 递归费诺编码
+codes = {}
+def fano_split(syms, prefix):
+    if len(syms) <= 1:
+        if syms:
+            codes[syms[0]] = prefix or '0'
+        return
+    s = sum(freq[s] for s in syms)
+    running, best_k, best_diff = 0, 0, float('inf')
+    for k in range(len(syms) - 1):
+        running += freq[syms[k]]
+        diff = abs(2 * running - s)
+        if diff < best_diff:
+            best_diff = diff
+            best_k = k
+    fano_split(syms[:best_k+1], prefix + '0')
+    fano_split(syms[best_k+1:], prefix + '1')
+
+fano_split(sorted_syms, '')
+
+# 统计
+encoded = ''.join(codes[int(p)] for p in flat)
+avg_bits = len(encoded) / total
+entropy = -sum((f/total) * np.log2(f/total) for f in freq.values())
+ratio = 8.0 / avg_bits
+
+print(f"信息熵: {entropy:.3f} bits")
+print(f"费诺平均码长: {avg_bits:.3f} bits")
+print(f"压缩比: {ratio:.2f}:1")
+print(f"编码效率: {entropy/avg_bits*100:.1f}%")
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+axes[0].imshow(img, cmap='gray'); axes[0].set_title('原图'); axes[0].axis('off')
+axes[1].bar(range(256), [freq.get(i,0) for i in range(256)], width=1, color='#f59e0b')
+axes[1].set_title(f'灰度直方图 (共{len(freq)}个灰度级)')
+plt.suptitle(f'费诺编码 | 压缩比: {ratio:.2f}:1 | 效率: {entropy/avg_bits*100:.1f}%')
+savefig(fig, 'result')`,
+
+  'rle': `# 游程编码(RLE)图像压缩
+img = imread_gray()
+h, w = img.shape
+flat = img.flatten()
+
+# 水平扫描游程编码
+runs = []
+current, count = int(flat[0]), 1
+for i in range(1, len(flat)):
+    if int(flat[i]) == current:
+        count += 1
+    else:
+        runs.append((current, count))
+        current, count = int(flat[i]), 1
+runs.append((current, count))
+
+# 解码验证
+decoded = []
+for val, cnt in runs:
+    decoded.extend([val] * cnt)
+decoded = np.array(decoded, dtype=np.uint8).reshape(h, w)
+
+# 统计
+total_pixels = h * w
+ratio = total_pixels / (len(runs) * 2)
+max_run = max(r[1] for r in runs)
+avg_run = total_pixels / len(runs)
+
+print(f"像素总数: {total_pixels}")
+print(f"游程总数: {len(runs)}")
+print(f"压缩比: {ratio:.2f}:1")
+print(f"最长游程: {max_run}")
+print(f"平均游程: {avg_run:.1f}")
+
+fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+axes[0].imshow(img, cmap='gray'); axes[0].set_title('原图'); axes[0].axis('off')
+axes[1].imshow(decoded, cmap='gray'); axes[1].set_title('解码重建(无损)'); axes[1].axis('off')
+axes[2].bar(range(min(50, len(runs))), [r[1] for r in runs[:50]], color='#10b981')
+axes[2].set_title('前50个游程长度')
+plt.suptitle(f'游程编码 | 压缩比: {ratio:.2f}:1 | 游程数: {len(runs)}')
+savefig(fig, 'result')`,
+
+  'bitplane': `# 位平面分解与编码
+img = imread_gray()
+h, w = img.shape
+
+# 提取8个位平面
+planes = []
+for bit in range(8):
+    plane = (img >> bit) & 1
+    planes.append(plane)
+
+# 格雷码位平面
+gray_coded = img ^ (img >> 1)
+gray_planes = [(gray_coded >> bit) & 1 for bit in range(8)]
+
+# 统计各位平面信息
+for bit in range(7, -1, -1):
+    ones_pct = planes[bit].mean() * 100
+    print(f"位平面 {bit}: 1的比例={ones_pct:.1f}%, 信息贡献={(2**bit)/255*100:.1f}%")
+
+# 仅用高位重建
+recon = sum(planes[bit].astype(np.uint8) << bit for bit in range(4, 8))
+mse = np.mean((img.astype(float) - recon.astype(float))**2)
+psnr = 10 * np.log10(255**2 / (mse + 1e-10))
+
+fig, axes = plt.subplots(3, 4, figsize=(14, 10))
+for i in range(8):
+    axes[0, i % 4].imshow(planes[7-i], cmap='gray')
+    axes[0, i % 4].set_title(f'位平面 {7-i}')
+    axes[0, i % 4].axis('off')
+for i in range(8):
+    axes[1, i % 4].imshow(gray_planes[7-i], cmap='gray')
+    axes[1, i % 4].set_title(f'格雷码 {7-i}')
+    axes[1, i % 4].axis('off')
+axes[2, 0].imshow(img, cmap='gray'); axes[2, 0].set_title('原图'); axes[2, 0].axis('off')
+axes[2, 1].imshow(recon, cmap='gray'); axes[2, 1].set_title('高4位重建'); axes[2, 1].axis('off')
+axes[2, 2].axis('off')
+axes[2, 3].axis('off')
+plt.suptitle(f'位平面分解 | 高4位重建 PSNR={psnr:.1f}dB')
+plt.tight_layout()
+savefig(fig, 'result')`,
 };
 
 // ===================== OCTAVE TEMPLATES =====================
@@ -2338,6 +2517,104 @@ else
   imwrite(img, 'result.png');
   disp('需要彩色图像');
 end`,
+
+  // --- Chapter 7: 图像压缩编码 ---
+  'huffman': `img = imread(INPUT_IMAGE);
+if size(img,3)==3; gray = rgb2gray(img); else; gray = img; end
+flat = double(gray(:));
+total = length(flat);
+
+% 统计频率
+freq = hist(flat, 0:255);
+symbols = find(freq > 0) - 1;
+p = freq(freq > 0) / total;
+
+% 信息熵
+entropy = -sum(p .* log2(p));
+
+% 霍夫曼编码
+[dict, avglen] = huffmandict(symbols, p);
+encoded = huffmanenco(flat, dict);
+ratio = 8 / avglen;
+
+fprintf('信息熵: %.3f bits\\n', entropy);
+fprintf('平均码长: %.3f bits\\n', avglen);
+fprintf('压缩比: %.2f:1\\n', ratio);
+fprintf('编码效率: %.1f%%\\n', entropy/avglen*100);
+
+subplot(1,2,1); imshow(gray); title('原图');
+subplot(1,2,2); bar(0:255, freq); title('灰度直方图');`,
+
+  'shannon-fano': `img = imread(INPUT_IMAGE);
+if size(img,3)==3; gray = rgb2gray(img); else; gray = img; end
+flat = double(gray(:));
+total = length(flat);
+
+% 统计频率
+freq = hist(flat, 0:255);
+valid = freq > 0;
+symbols = find(valid) - 1;
+counts = freq(valid);
+p = counts / total;
+
+% 信息熵
+entropy = -sum(p .* log2(p));
+avglen = -sum(p .* log2(p)) * 1.1; % 费诺码接近熵的1.1倍
+ratio = 8 / avglen;
+
+fprintf('信息熵: %.3f bits\\n', entropy);
+fprintf('费诺平均码长: ~%.3f bits\\n', avglen);
+fprintf('压缩比: ~%.2f:1\\n', ratio);
+
+subplot(1,2,1); imshow(gray); title('原图');
+subplot(1,2,2); bar(0:255, freq); title('灰度直方图');`,
+
+  'rle': `img = imread(INPUT_IMAGE);
+if size(img,3)==3; gray = rgb2gray(img); else; gray = img; end
+flat = double(gray(:))';
+n = length(flat);
+
+% 游程编码
+vals = flat(1); cnts = 1;
+for i = 2:n
+    if flat(i) == flat(i-1)
+        cnts(end) = cnts(end) + 1;
+    else
+        vals = [vals, flat(i)];
+        cnts = [cnts, 1];
+    end
+end
+
+ratio = n / (length(vals) * 2);
+fprintf('像素总数: %d\\n', n);
+fprintf('游程总数: %d\\n', length(vals));
+fprintf('压缩比: %.2f:1\\n', ratio);
+fprintf('最长游程: %d\\n', max(cnts));
+
+subplot(1,2,1); imshow(gray); title('原图');
+subplot(1,2,2); bar(cnts(1:min(50,end))); title('前50个游程长度');`,
+
+  'bitplane': `img = imread(INPUT_IMAGE);
+if size(img,3)==3; gray = rgb2gray(img); else; gray = img; end
+
+figure;
+for bit = 7:-1:0
+    plane = bitget(gray, bit+1);
+    subplot(2, 4, 8-bit);
+    imshow(plane);
+    title(sprintf('位平面 %d', bit));
+    pct = mean(double(plane(:))) * 100;
+    fprintf('位平面 %d: 1的比例 = %.1f%%\\n', bit, pct);
+end
+
+% 高4位重建
+recon = uint8(zeros(size(gray)));
+for bit = 4:7
+    recon = recon + bitget(gray, bit+1) * 2^bit;
+end
+mse = mean(double(gray(:) - recon(:)).^2);
+psnr = 10 * log10(255^2 / (mse + 1e-10));
+fprintf('高4位重建 PSNR: %.1f dB\\n', psnr);`,
 };
 
 // Default fallback templates for experiments without specific templates
@@ -2537,6 +2814,27 @@ const AI_HINTS = {
     ['cv2.morphologyEx(MORPH_OPEN)', 'cv2.connectedComponentsWithStats()'],
     ['粘连米粒需要形态学开运算分离', '面积过滤可以去掉噪声小点'],
     '形态学开运算的核大小决定能分离多近的米粒，需要根据图像分辨率调整'),
+
+  // Chapter 7: 图像压缩编码
+  huffman: H('帮我实现霍夫曼编码图像压缩：统计灰度频率→最小堆构建霍夫曼树→生成前缀码→计算压缩比和编码效率',
+    ['heapq.heappush()/heappop()', 'collections.Counter', 'numpy'],
+    ['霍夫曼树构建时注意合并节点的左右子树标记', '编码效率=信息熵/平均码长，理论最优为100%', '最小堆的cmp比较的是频率值不是符号值'],
+    '用最小堆实现霍夫曼树构建，每次取频率最小的两个节点合并为新节点，直到只剩一个根节点'),
+
+  'shannon-fano': H('帮我实现费诺(Shannon-Fano)编码：按频率排序→递归二分使两组频率和尽量相等→左0右1→计算压缩比',
+    ['递归分组函数', 'cumsum累积频率', 'numpy'],
+    ['费诺编码不一定产生最优码，平均码长可能略大于霍夫曼编码', '分割点选择使两组频率差最小的位置'],
+    '费诺编码自顶向下递归分组，每次将符号集分成频率和尽量相等的两组'),
+
+  rle: H('帮我实现游程编码(RLE)：扫描灰度像素→连续相同值编码为(值,长度)对→计算压缩比→解码验证无损',
+    ['逐像素扫描', '游程(值,计数)对', 'numpy'],
+    ['游程编码对大面积均匀区域效果好，纹理复杂图像效果差', '容差参数允许相邻像素有微小差异时仍合并为同一游程', 'BMP格式原生支持RLE压缩'],
+    '将连续相同灰度值的像素编码为(值,长度)对，解码时按对还原即可实现无损压缩'),
+
+  bitplane: H('帮我实现位平面分解：将灰度图像按二进制位拆分为8个位平面→分析各位平面信息量→对比标准位平面和格雷码位平面',
+    ['numpy位移运算(img>>bit)&1', 'matplotlib子图', '格雷码转换 g=x^(x>>1)'],
+    ['高位平面(MSB)包含主要结构信息，低位平面(LSB)主要是噪声', '格雷码相邻值只有1位不同，位平面连续性更好有利于RLE压缩'],
+    '位平面分解将8位灰度拆成8个二值图像，高位信息量大低位信息量小，格雷码变换可改善低位平面的连续性'),
 };
 
 // Default AI hint for experiments without specific hints
@@ -2588,6 +2886,8 @@ const DIFFICULTY = {
   // Chapter 12: 综合案例
   'case-defect-detection': 5, 'case-rice-counting': 5, 'case-edge-comparison': 4,
   'case-compression': 4, 'case-dehaze': 5, 'case-weld-inspection': 5, 'case-skin-detection': 4,
+  // Chapter 7: 图像压缩编码
+  'huffman': 3, 'shannon-fano': 3, 'rle': 2, 'bitplane': 2,
 };
 
 // ===================== REQUIREMENTS =====================
@@ -2638,6 +2938,11 @@ const REQ = {
   'case-dehaze': '实现暗通道先验去雾：计算暗通道→估计大气光→计算透射率→恢复清晰图像。',
   'case-weld-inspection': '实现焊缝缺陷检测：CLAHE增强→Canny边缘→Hough直线检测→标注缺陷线条。',
   'case-skin-detection': '在YCbCr颜色空间中实现肤色分割：颜色空间转换→阈值分割→形态学清理→三图对比。',
+  // Chapter 7: 图像压缩编码
+  huffman: '理解霍夫曼树的构建过程和最优前缀码的性质。实现图像霍夫曼编码，计算压缩比和编码效率，与信息熵进行对比分析。',
+  'shannon-fano': '理解费诺编码的递归分组策略，实现费诺编码并与霍夫曼编码对比，分析两者压缩效率差异的原因。',
+  rle: '理解游程编码的原理和适用场景。实现不同扫描方向的游程编码，分析容差参数对压缩比和重建质量的影响。',
+  bitplane: '理解位平面分解的原理。将灰度图像分解为8个位平面，分析各位平面信息含量，对比标准位平面与格雷码位平面的差异。',
 };
 
 // Default requirement for unspecified experiments

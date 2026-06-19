@@ -119,8 +119,9 @@ function migrate(db) {
   // Ch6 (图像恢复): from old Ch5
   for (const key of ['motion-blur', 'defocus-blur', 'inverse-filter', 'wiener-filter', 'blind-deconv'])
     db.exec(`UPDATE simulations SET chapter_id=6 WHERE sim_key='${key}'`);
-  // Ch7 (压缩): case experiment from old Ch10
-  db.exec("UPDATE simulations SET chapter_id=7 WHERE sim_key='case-compression'");
+  // Ch7 (图像压缩编码): compression experiments
+  for (const key of ['case-compression','huffman','shannon-fano','rle','bitplane'])
+    db.exec(`UPDATE simulations SET chapter_id=7 WHERE sim_key='${key}'`);
   // Ch8 (图像分割): from old Ch6
   for (const key of ['sobel', 'canny', 'threshold-seg', 'region-grow', 'watershed', 'kmeans-seg'])
     db.exec(`UPDATE simulations SET chapter_id=8 WHERE sim_key='${key}'`);

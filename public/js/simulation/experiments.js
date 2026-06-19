@@ -1,6 +1,6 @@
 /**
  * experiments.js - 图像处理实验配置
- * 共65个实验，分12章，涵盖数字图像处理完整知识体系
+ * 共69个实验，分12章，涵盖数字图像处理完整知识体系
  * 导出: window.ExperimentConfig
  */
 
@@ -118,6 +118,115 @@ function _spectrumImage(freq) {
   }
   return out;
 }
+
+/* ========== 压缩编码辅助函数 ========== */
+var _toGray = function(data, w, h) {
+  var gray = new Uint8Array(w * h);
+  for (var i = 0; i < w * h; i++) {
+    gray[i] = Math.round(0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2]);
+  }
+  return gray;
+};
+
+var _grayToImg = function(gray, w, h) {
+  var canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  var ctx = canvas.getContext('2d');
+  var out = ctx.createImageData(w, h);
+  for (var i = 0; i < gray.length; i++) {
+    out.data[i * 4] = gray[i];
+    out.data[i * 4 + 1] = gray[i];
+    out.data[i * 4 + 2] = gray[i];
+    out.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(out, 0, 0);
+  return ctx.getImageData(0, 0, w, h);
+};
+
+var _buildHuffman = function(freq) {
+  // Min-heap based Huffman tree
+  var nodes = [];
+  for (var i = 0; i < 256; i++) {
+    if (freq[i] > 0) nodes.push({ sym: i, freq: freq[i], left: null, right: null });
+  }
+  if (nodes.length === 0) return { codes: {}, lengths: {}, avgBits: 0 };
+  if (nodes.length === 1) {
+    var single = {}; single[nodes[0].sym] = '0';
+    var singleLen = {}; singleLen[nodes[0].sym] = 1;
+    return { codes: single, lengths: singleLen, avgBits: 1 };
+  }
+  // Build min-heap
+  function heapify(arr) {
+    arr.sort(function(a, b) { return a.freq - b.freq; });
+  }
+  heapify(nodes);
+  while (nodes.length > 1) {
+    var a = nodes.shift();
+    var b = nodes.shift();
+    nodes.push({ sym: -1, freq: a.freq + b.freq, left: a, right: b });
+    heapify(nodes);
+  }
+  var root = nodes[0];
+  var codes = {}, lengths = {};
+  function traverse(node, code) {
+    if (node.left === null && node.right === null) {
+      codes[node.sym] = code || '0';
+      lengths[node.sym] = (code || '0').length;
+      return;
+    }
+    if (node.left) traverse(node.left, code + '0');
+    if (node.right) traverse(node.right, code + '1');
+  }
+  traverse(root, '');
+  var total = 0, totalLen = 0;
+  for (var s in codes) {
+    total += freq[s] * codes[s].length;
+    totalLen += freq[s];
+  }
+  return { codes: codes, lengths: lengths, avgBits: totalLen > 0 ? total / totalLen : 0 };
+};
+
+var _buildFano = function(freq) {
+  // Shannon-Fano encoding: recursive binary split
+  var symbols = [];
+  for (var i = 0; i < 256; i++) {
+    if (freq[i] > 0) symbols.push({ sym: i, freq: freq[i] });
+  }
+  symbols.sort(function(a, b) { return b.freq - a.freq; });
+  if (symbols.length === 0) return { codes: {}, lengths: {}, avgBits: 0 };
+  if (symbols.length === 1) {
+    var single = {}; single[symbols[0].sym] = '0';
+    var singleLen = {}; singleLen[symbols[0].sym] = 1;
+    return { codes: single, lengths: singleLen, avgBits: 1 };
+  }
+  var codes = {}, lengths = {};
+  function split(arr, prefix) {
+    if (arr.length === 1) {
+      codes[arr[0].sym] = prefix || '0';
+      lengths[arr[0].sym] = (prefix || '0').length;
+      return;
+    }
+    if (arr.length === 0) return;
+    // Find split point that minimizes difference in sums
+    var totalSum = 0;
+    for (var i = 0; i < arr.length; i++) totalSum += arr[i].freq;
+    var bestSplit = 1, bestDiff = Infinity, running = 0;
+    for (var i = 0; i < arr.length - 1; i++) {
+      running += arr[i].freq;
+      var diff = Math.abs(2 * running - totalSum);
+      if (diff < bestDiff) { bestDiff = diff; bestSplit = i + 1; }
+    }
+    split(arr.slice(0, bestSplit), prefix + '0');
+    split(arr.slice(bestSplit), prefix + '1');
+  }
+  split(symbols, '');
+  var total = 0, totalLen = 0;
+  for (var s in codes) {
+    total += freq[s] * codes[s].length;
+    totalLen += freq[s];
+  }
+  return { codes: codes, lengths: lengths, avgBits: totalLen > 0 ? total / totalLen : 0 };
+};
 
 window.ExperimentConfig = {
 
@@ -2724,6 +2833,398 @@ window.ExperimentConfig = {
       ctx.fillStyle = '#ff6b6b'; ctx.font = '14px sans-serif';
       ctx.fillText('Objects detected: ' + count, 10, h + 42);
       return ctx.getImageData(0, 0, w, h + 50);
+    }
+  },
+
+  /* ============================
+   * 第7章 压缩编码 (4个实验)
+   * ============================ */
+
+  'huffman': {
+    title: '霍夫曼编码',
+    description: '基于灰度概率统计构建霍夫曼树，实现最优前缀编码，理解无损压缩原理',
+    categoryName: '基础',
+    category: 'basic',
+    chapter: 7,
+    sample: 'rice.bmp',
+    caseText: '霍夫曼编码是信息论中的经典无损压缩算法。它根据符号出现的概率分配不等长码字——高频符号用短码，低频符号用长码，从而实现最优的平均码长。JPEG标准中就使用了霍夫曼编码作为最终的熵编码步骤。',
+    principle: '霍夫曼编码的构建过程：(1)统计每个灰度值的出现频率；(2)将每个符号视为一棵单节点树；(3)反复取出频率最小的两棵树合并，直到只剩一棵树；(4)从根到叶的路径即为该符号的编码(左0右1)。霍夫曼编码是最优的前缀编码，任何符号的编码都不是其他符号编码的前缀。',
+    controls: [
+      { key: 'showTopN', label: '显示编码表前N项', type: 'range', min: 5, max: 50, step: 5, default: 20 }
+    ],
+    run(imageData, { showTopN = 20 } = {}) {
+      const w = imageData.width, h = imageData.height;
+      const gray = _toGray(imageData.data, w, h);
+      // 1. Frequency count
+      const freq = new Array(256).fill(0);
+      for (let i = 0; i < gray.length; i++) freq[gray[i]]++;
+      // 2. Build Huffman tree
+      const huff = _buildHuffman(freq);
+      // 3. Encode
+      let encoded = '';
+      for (let i = 0; i < gray.length; i++) encoded += huff.codes[gray[i]];
+      // 4. Decode verification
+      const decoded = new Uint8Array(gray.length);
+      // Simple decode: reverse lookup
+      const revMap = {};
+      for (const sym in huff.codes) revMap[huff.codes[sym]] = parseInt(sym);
+      let buf = '', idx = 0;
+      for (let i = 0; i < encoded.length && idx < gray.length; i++) {
+        buf += encoded[i];
+        if (revMap[buf] !== undefined) { decoded[idx++] = revMap[buf]; buf = ''; }
+      }
+      // 5. Compute stats
+      const entropy = freq.reduce((s, f) => {
+        if (f === 0) return s;
+        const p = f / gray.length;
+        return s - p * Math.log2(p);
+      }, 0);
+      const rawBits = gray.length * 8;
+      const compBits = encoded.length;
+      const ratio = rawBits / compBits;
+      // Verify lossless
+      let match = true;
+      for (let i = 0; i < gray.length; i++) { if (decoded[i] !== gray[i]) { match = false; break; } }
+      // 6. Build output: top=original, middle=reconstructed, bottom=freq histogram + stats
+      const outH = h * 2 + 120;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      // Original
+      const origImg = _grayToImg(gray, w, h);
+      ctx.putImageData(origImg, 0, 0);
+      // Reconstructed
+      const reconImg = _grayToImg(decoded, w, h);
+      ctx.putImageData(reconImg, 0, h);
+      // Stats bar
+      ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, h * 2, w, 120);
+      ctx.fillStyle = '#00d2ff'; ctx.font = 'bold 13px monospace';
+      ctx.fillText('霍夫曼编码统计', 10, h * 2 + 18);
+      ctx.fillStyle = '#e0e0e0'; ctx.font = '12px monospace';
+      ctx.fillText('信息熵: ' + entropy.toFixed(3) + ' bit/符号   平均码长: ' + huff.avgBits.toFixed(3) + ' bit/符号', 10, h * 2 + 38);
+      ctx.fillText('原始: ' + rawBits + ' bit   压缩: ' + compBits + ' bit   压缩比: ' + ratio.toFixed(3) + ':1', 10, h * 2 + 56);
+      ctx.fillText('无损验证: ' + (match ? '通过 ✓' : '失败 ✗') + '   不同灰度级数: ' + Object.keys(huff.codes).length, 10, h * 2 + 74);
+      // Frequency histogram (top N)
+      const sorted = [];
+      for (let v = 0; v < 256; v++) { if (freq[v] > 0) sorted.push({ v, f: freq[v], code: huff.codes[v] }); }
+      sorted.sort((a, b) => b.f - a.f);
+      const topN = Math.min(showTopN, sorted.length);
+      const barW = Math.max(1, Math.floor((w - 40) / topN));
+      const maxF = sorted[0] ? sorted[0].f : 1;
+      for (let i = 0; i < topN; i++) {
+        const barH = Math.round((sorted[i].f / maxF) * 25);
+        ctx.fillStyle = '#4ecdc4';
+        ctx.fillRect(20 + i * barW, h * 2 + 115 - barH, barW - 1, barH);
+        ctx.fillStyle = '#aaa'; ctx.font = '8px monospace';
+        ctx.fillText(sorted[i].v + '', 20 + i * barW, h * 2 + 118);
+      }
+      ctx.fillStyle = '#888'; ctx.font = '10px sans-serif';
+      ctx.fillText('频率分布 (前' + topN + '项)', 20, h * 2 + 92);
+      return ctx.getImageData(0, 0, w, outH);
+    }
+  },
+
+  'shannon-fano': {
+    title: '费诺编码',
+    description: '基于符号概率的递归二分法构建编码树，与霍夫曼编码对比理解不同编码策略',
+    categoryName: '基础',
+    category: 'basic',
+    chapter: 7,
+    sample: 'rice.bmp',
+    caseText: '费诺编码(Shannon-Fano)是霍夫曼编码之前提出的编码方法。它采用自顶向下的递归二分策略，每次尽量将符号集分成概率相等的两部分。虽然不如霍夫曼编码最优，但实现更直观，且在某些场景下性能接近。',
+    principle: '费诺编码步骤：(1)将所有符号按概率从大到小排序；(2)找到分割点使得两部分的概率之和尽量相等；(3)左半部分编码前缀加0，右半部分加1；(4)递归执行直到每个部分只有一个符号。与霍夫曼的自底向上策略不同，费诺是自顶向下的贪心算法，因此不保证最优。',
+    controls: [
+      { key: 'showTopN', label: '显示编码表前N项', type: 'range', min: 5, max: 50, step: 5, default: 20 },
+      { key: 'compareHuffman', label: '与霍夫曼对比', type: 'select', options: ['关', '开'], default: '开' }
+    ],
+    run(imageData, { showTopN = 20, compareHuffman = '开' } = {}) {
+      const w = imageData.width, h = imageData.height;
+      const gray = _toGray(imageData.data, w, h);
+      // Frequency
+      const freq = new Array(256).fill(0);
+      for (let i = 0; i < gray.length; i++) freq[gray[i]]++;
+      // Build Fano
+      const fano = _buildFano(freq);
+      // Build Huffman for comparison
+      const huff = compareHuffman === '开' ? _buildHuffman(freq) : null;
+      // Encode with Fano
+      let fanoBits = 0;
+      for (let i = 0; i < gray.length; i++) fanoBits += fano.codes[gray[i]].length;
+      // Decode verification
+      const revMap = {};
+      for (const sym in fano.codes) revMap[fano.codes[sym]] = parseInt(sym);
+      let encoded = '';
+      for (let i = 0; i < gray.length; i++) encoded += fano.codes[gray[i]];
+      const decoded = new Uint8Array(gray.length);
+      let buf = '', idx = 0;
+      for (let i = 0; i < encoded.length && idx < gray.length; i++) {
+        buf += encoded[i];
+        if (revMap[buf] !== undefined) { decoded[idx++] = revMap[buf]; buf = ''; }
+      }
+      let match = true;
+      for (let i = 0; i < gray.length; i++) { if (decoded[i] !== gray[i]) { match = false; break; } }
+      // Stats
+      const entropy = freq.reduce((s, f) => {
+        if (f === 0) return s;
+        const p = f / gray.length;
+        return s - p * Math.log2(p);
+      }, 0);
+      const rawBits = gray.length * 8;
+      const fanoRatio = rawBits / fanoBits;
+      let huffBits = 0, huffRatio = 0;
+      if (huff) {
+        for (let i = 0; i < gray.length; i++) huffBits += huff.codes[gray[i]].length;
+        huffRatio = rawBits / huffBits;
+      }
+      // Output
+      const outH = h * 2 + 130;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(_grayToImg(gray, w, h), 0, 0);
+      ctx.putImageData(_grayToImg(decoded, w, h), 0, h);
+      ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, h * 2, w, 130);
+      ctx.fillStyle = '#ff9f43'; ctx.font = 'bold 13px monospace';
+      ctx.fillText('费诺编码统计', 10, h * 2 + 18);
+      ctx.fillStyle = '#e0e0e0'; ctx.font = '12px monospace';
+      ctx.fillText('信息熵: ' + entropy.toFixed(3) + ' bit/符号   费诺平均码长: ' + fano.avgBits.toFixed(3) + ' bit/符号', 10, h * 2 + 38);
+      ctx.fillText('原始: ' + rawBits + ' bit   费诺压缩: ' + fanoBits + ' bit   压缩比: ' + fanoRatio.toFixed(3) + ':1', 10, h * 2 + 56);
+      ctx.fillText('无损验证: ' + (match ? '通过 ✓' : '失败 ✗') + '   不同灰度级数: ' + Object.keys(fano.codes).length, 10, h * 2 + 74);
+      if (huff) {
+        ctx.fillStyle = '#4ecdc4'; ctx.font = '12px monospace';
+        ctx.fillText('霍夫曼对比: 平均码长 ' + huff.avgBits.toFixed(3) + ' bit   压缩 ' + huffBits + ' bit   比率 ' + huffRatio.toFixed(3) + ':1', 10, h * 2 + 92);
+        const diff = fanoBits - huffBits;
+        ctx.fillStyle = diff > 0 ? '#ff6b6b' : '#4ecdc4';
+        ctx.fillText('费诺多使用 ' + diff + ' bit (' + (diff / rawBits * 100).toFixed(2) + '% 冗余)', 10, h * 2 + 110);
+      }
+      // Coding table preview
+      const sorted = [];
+      for (let v = 0; v < 256; v++) { if (freq[v] > 0) sorted.push({ v, f: freq[v] }); }
+      sorted.sort((a, b) => b.f - a.f);
+      const topN = Math.min(showTopN, sorted.length);
+      ctx.fillStyle = '#888'; ctx.font = '9px monospace';
+      let tx = w - 250;
+      ctx.fillText('编码表(前' + topN + '项):', tx, h * 2 + 18);
+      for (let i = 0; i < Math.min(topN, 8); i++) {
+        const s = sorted[i];
+        ctx.fillStyle = '#ccc';
+        ctx.fillText(s.v + '→' + fano.codes[s.v], tx, h * 2 + 32 + i * 12);
+      }
+      return ctx.getImageData(0, 0, w, outH);
+    }
+  },
+
+  'rle': {
+    title: '游程编码',
+    description: '将连续重复的像素值编码为(值,长度)对，理解空间冗余与编码效率的关系',
+    categoryName: '基础',
+    category: 'basic',
+    chapter: 7,
+    sample: 'rice.bmp',
+    caseText: '游程编码(RLE)是最简单直观的压缩方法——将连续相同的值用"值+重复次数"表示。它在二值图像、图标、简单图形等包含大量平坦区域的图像上压缩效果极好，BMP格式就支持RLE压缩。对于自然图像，由于灰度变化丰富，压缩比通常较低。',
+    principle: 'RLE编码规则：扫描像素序列，将连续相同值的段编码为(值, 长度)对。例如 [5,5,5,5,3,3,8] → [(5,4),(3,2),(8,1)]。灰度容差(tolerance)允许相邻值有微小差异时仍视为"相同"，可提高自然图像的压缩比。解码过程简单地将每个(值,长度)对展开即可。',
+    controls: [
+      { key: 'tolerance', label: '灰度容差', type: 'range', min: 0, max: 20, step: 1, default: 0 },
+      { key: 'direction', label: '扫描方向', type: 'select', options: ['水平(逐行)', '垂直(逐列)', 'Zigzag'], default: '水平(逐行)' }
+    ],
+    run(imageData, { tolerance = 0, direction = '水平(逐行)' } = {}) {
+      const w = imageData.width, h = imageData.height;
+      const gray = _toGray(imageData.data, w, h);
+      // Build scan order
+      const seq = new Uint8Array(w * h);
+      if (direction === '垂直(逐列)') {
+        for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) seq[y + x * h] = gray[y * w + x];
+      } else if (direction === 'Zigzag') {
+        let idx = 0;
+        for (let y = 0; y < h; y++) {
+          if (y % 2 === 0) { for (let x = 0; x < w; x++) seq[idx++] = gray[y * w + x]; }
+          else { for (let x = w - 1; x >= 0; x--) seq[idx++] = gray[y * w + x]; }
+        }
+      } else {
+        for (let i = 0; i < w * h; i++) seq[i] = gray[i];
+      }
+      // RLE encode
+      const runs = []; // [{val, len}]
+      let curVal = seq[0], curLen = 1;
+      for (let i = 1; i < seq.length; i++) {
+        if (Math.abs(seq[i] - curVal) <= tolerance) {
+          curLen++;
+        } else {
+          runs.push({ val: curVal, len: curLen });
+          curVal = seq[i]; curLen = 1;
+        }
+      }
+      runs.push({ val: curVal, len: curLen });
+      // Decode
+      const decoded = new Uint8Array(w * h);
+      let pos = 0;
+      for (const r of runs) { for (let j = 0; j < r.len; j++) decoded[pos++] = r.val; }
+      // Reorder decoded back to image layout
+      const reconGray = new Uint8Array(w * h);
+      if (direction === '垂直(逐列)') {
+        let idx2 = 0;
+        for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) reconGray[y * w + x] = decoded[idx2++];
+      } else if (direction === 'Zigzag') {
+        let idx2 = 0;
+        for (let y = 0; y < h; y++) {
+          if (y % 2 === 0) { for (let x = 0; x < w; x++) reconGray[y * w + x] = decoded[idx2++]; }
+          else { for (let x = w - 1; x >= 0; x--) reconGray[y * w + x] = decoded[idx2++]; }
+        }
+      } else {
+        for (let i = 0; i < w * h; i++) reconGray[i] = decoded[i];
+      }
+      // Stats
+      const rawBits = w * h * 8;
+      // Each run: 8-bit value + variable length (assume 16-bit max)
+      const rleBits = runs.length * (8 + 16);
+      const ratio = rawBits / rleBits;
+      const avgRun = (w * h) / runs.length;
+      // Run length histogram
+      const lenHist = new Array(256).fill(0);
+      for (const r of runs) { const l = Math.min(r.len, 255); lenHist[l]++; }
+      // Output
+      const outH = h * 2 + 120;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(_grayToImg(gray, w, h), 0, 0);
+      ctx.putImageData(_grayToImg(reconGray, w, h), 0, h);
+      // Stats bar
+      ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, h * 2, w, 120);
+      ctx.fillStyle = '#a29bfe'; ctx.font = 'bold 13px monospace';
+      ctx.fillText('游程编码统计', 10, h * 2 + 18);
+      ctx.fillStyle = '#e0e0e0'; ctx.font = '12px monospace';
+      ctx.fillText('扫描方向: ' + direction + '   灰度容差: ' + tolerance, 10, h * 2 + 38);
+      ctx.fillText('游程段数: ' + runs.length + '   平均游程长度: ' + avgRun.toFixed(1) + '   像素总数: ' + (w * h), 10, h * 2 + 56);
+      ctx.fillStyle = ratio > 1 ? '#4ecdc4' : '#ff6b6b';
+      ctx.fillText('原始: ' + rawBits + ' bit   RLE: ' + rleBits + ' bit (每段24bit)   压缩比: ' + ratio.toFixed(3) + ':1', 10, h * 2 + 74);
+      ctx.fillStyle = '#888'; ctx.font = '10px sans-serif';
+      ctx.fillText('游程长度分布', 10, h * 2 + 92);
+      // Histogram of run lengths
+      let maxH = 0;
+      for (let i = 0; i < 256; i++) if (lenHist[i] > maxH) maxH = lenHist[i];
+      if (maxH === 0) maxH = 1;
+      const barMaxW = w - 40;
+      for (let i = 1; i < 256; i++) {
+        if (lenHist[i] === 0) continue;
+        const bw = Math.max(1, Math.round((lenHist[i] / maxH) * (barMaxW / 64)));
+        const bx = 20 + Math.min(i, 255) * (barMaxW / 256);
+        ctx.fillStyle = '#a29bfe';
+        ctx.fillRect(bx, h * 2 + 115 - Math.round(lenHist[i] / maxH * 20), Math.max(1, barMaxW / 256 - 1), Math.round(lenHist[i] / maxH * 20));
+      }
+      return ctx.getImageData(0, 0, w, outH);
+    }
+  },
+
+  'bitplane': {
+    title: '位平面编码',
+    description: '将灰度图像分解为8个位平面，分析各平面的信息量与视觉重要性',
+    categoryName: '基础',
+    category: 'basic',
+    chapter: 7,
+    sample: 'rice.bmp',
+    caseText: '位平面分解是图像压缩中的重要概念。一个8位灰度图可以看作8个二值图像的叠加，每个二值图像对应一个位平面。高位平面(如bit7,bit6)包含图像的主要信息，低位平面(如bit0,bit1)多为噪声。丢弃低位平面可实现有损压缩。',
+    principle: '对于8位灰度图像，像素值g可表示为 g = b7×128 + b6×64 + b5×32 + b4×16 + b3×8 + b2×4 + b1×2 + b0×1。第k个位平面就是提取所有像素的第k位组成的二值图像。高位平面(bit7~bit4)携带图像的主要轮廓和亮度信息，低位平面(bit3~bit0)包含细节和噪声。格雷码位平面可减少相邻像素间的码字跳变，有利于后续游程编码。',
+    controls: [
+      { key: 'selectedPlane', label: '选择位平面', type: 'range', min: 0, max: 7, step: 1, default: 7 },
+      { key: 'layout', label: '布局', type: 'select', options: ['2x4网格', '单独平面', '格雷码'], default: '2x4网格' }
+    ],
+    run(imageData, { selectedPlane = 7, layout = '2x4网格' } = {}) {
+      const w = imageData.width, h = imageData.height;
+      const gray = _toGray(imageData.data, w, h);
+      // Extract 8 bit planes
+      const planes = [];
+      for (let b = 0; b < 8; b++) {
+        const plane = new Uint8Array(w * h);
+        const mask = 1 << b;
+        for (let i = 0; i < gray.length; i++) {
+          plane[i] = (gray[i] & mask) ? 255 : 0;
+        }
+        planes.push(plane);
+      }
+      // Gray code planes
+      let grayCodePlanes = null;
+      if (layout === '格雷码') {
+        const grayCode = new Uint8Array(w * h);
+        for (let i = 0; i < gray.length; i++) grayCode[i] = gray[i] ^ (gray[i] >> 1);
+        grayCodePlanes = [];
+        for (let b = 0; b < 8; b++) {
+          const plane = new Uint8Array(w * h);
+          const mask = 1 << b;
+          for (let i = 0; i < grayCode.length; i++) {
+            plane[i] = (grayCode[i] & mask) ? 255 : 0;
+          }
+          grayCodePlanes.push(plane);
+        }
+      }
+      // Compute info per plane (entropy of each plane as binary image)
+      const planeInfo = [];
+      for (let b = 0; b < 8; b++) {
+        let ones = 0;
+        for (let i = 0; i < planes[b].length; i++) if (planes[b][i] > 0) ones++;
+        const p = ones / (w * h);
+        const ent = p > 0 && p < 1 ? -(p * Math.log2(p) + (1 - p) * Math.log2(1 - p)) : 0;
+        planeInfo.push({ bit: b, ones: ones, ratio: p, entropy: ent });
+      }
+      // Output layout
+      if (layout === '单独平面') {
+        // Show original + selected plane side by side
+        const canvas = document.createElement('canvas');
+        canvas.width = w * 2; canvas.height = h + 50;
+        const ctx = canvas.getContext('2d');
+        ctx.putImageData(_grayToImg(gray, w, h), 0, 0);
+        ctx.putImageData(_grayToImg(planes[selectedPlane], w, h), w, 0);
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, h, w * 2, 50);
+        ctx.fillStyle = '#00d2ff'; ctx.font = 'bold 12px monospace';
+        ctx.fillText('原图', 10, h + 18);
+        ctx.fillText('位平面 ' + selectedPlane + ' (权重 ' + (1 << selectedPlane) + ')', w + 10, h + 18);
+        ctx.fillStyle = '#e0e0e0'; ctx.font = '11px monospace';
+        const info = planeInfo[selectedPlane];
+        ctx.fillText('白色像素占比: ' + (info.ratio * 100).toFixed(1) + '%   二值熵: ' + info.entropy.toFixed(3) + ' bit/像素', 10, h + 38);
+        return ctx.getImageData(0, 0, w * 2, h + 50);
+      }
+      // Grid layout (2x4 or Gray code 2x4)
+      const usePlanes = layout === '格雷码' ? grayCodePlanes : planes;
+      const label = layout === '格雷码' ? '格雷码位平面' : '自然二进制位平面';
+      const cellW = w, cellH = h;
+      const cols = 4, rows = 2;
+      const outW = cellW * cols;
+      const outH = cellH * rows + 60;
+      const canvas = document.createElement('canvas');
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      // Title bar
+      ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, outW, 30);
+      ctx.fillStyle = '#00d2ff'; ctx.font = 'bold 13px monospace';
+      ctx.fillText(label + ' (8位分解)', 10, 20);
+      // Draw 8 planes in 2x4 grid
+      for (let b = 7; b >= 0; b--) {
+        const col = (7 - b) % cols;
+        const row = Math.floor((7 - b) / cols);
+        const px = col * cellW;
+        const py = 30 + row * cellH;
+        const img = _grayToImg(usePlanes[b], w, h);
+        ctx.putImageData(img, px, py);
+        // Label
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(px, py, cellW, 16);
+        ctx.fillStyle = b === selectedPlane ? '#ff6b6b' : '#fff';
+        ctx.font = '11px monospace';
+        const pInfo = planeInfo[b];
+        ctx.fillText('bit' + b + ' (w=' + (1 << b) + ') ' + (pInfo.ratio * 100).toFixed(0) + '%白', px + 4, py + 12);
+      }
+      // Bottom stats
+      ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 30 + rows * cellH, outW, 30);
+      ctx.fillStyle = '#e0e0e0'; ctx.font = '11px monospace';
+      // High-bit reconstruction PSNR
+      let mse = 0;
+      for (let i = 0; i < gray.length; i++) {
+        const recon = (gray[i] >> 4) << 4; // keep top 4 bits
+        mse += (gray[i] - recon) * (gray[i] - recon);
+      }
+      mse /= gray.length;
+      const psnr = mse > 0 ? 10 * Math.log10(255 * 255 / mse) : Infinity;
+      ctx.fillText('高4位重建PSNR: ' + (psnr === Infinity ? '∞' : psnr.toFixed(1)) + ' dB   选中平面: bit' + selectedPlane + '   各平面熵: ' + planeInfo.map((p, i) => i + ':' + p.entropy.toFixed(2)).join(' '), 10, 30 + rows * cellH + 20);
+      return ctx.getImageData(0, 0, outW, outH);
     }
   }
 };
