@@ -34,27 +34,6 @@ for ax in axes: ax.axis('off')
 plt.tight_layout()
 savefig(fig, 'result')`,
 
-  resize: `# 图像缩放
-img = imread_color()
-h, w = img.shape[:2]
-# 缩小到一半
-small = cv2.resize(img, (w//2, h//2), interpolation=cv2.INTER_LINEAR)
-# 放大到两倍
-big = cv2.resize(img, (w*2, h*2), interpolation=cv2.INTER_CUBIC)
-fig, axes = plt.subplots(1, 3, figsize=(14, 4))
-for ax, im, t in zip(axes, [img, small, big], ['原图', '0.5x', '2x']):
-    ax.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB)); ax.set_title(f'{t} {im.shape[:2]}'); ax.axis('off')
-savefig(fig, 'result')`,
-
-  crop: `# 图像裁剪
-img = imread_color()
-h, w = img.shape[:2]
-# 裁剪中心区域
-cx, cy = w//4, h//4
-cropped = img[cy:h-cy, cx:w-cx]
-cv2.imwrite('result.png', cropped)
-info(原图尺寸=img.shape, 裁剪后=cropped.shape)`,
-
   histogram: `# 直方图计算与显示
 gray = imread_gray()
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
@@ -1528,21 +1507,6 @@ r = img(:,:,1); g = img(:,:,2); b = img(:,:,3);
 imwrite(r, 'result1.png'); imwrite(g, 'result2.png'); imwrite(b, 'result3.png');
 disp('通道分离完成: R/G/B 三个通道已保存');`,
 
-  resize: `img = imread(INPUT_IMAGE);
-small = imresize(img, 0.5);
-big = imresize(img, 2.0);
-imwrite(small, 'result1.png');
-imwrite(big, 'result2.png');
-disp(['缩小: ' mat2str(size(small)) ' 放大: ' mat2str(size(big))]);`,
-
-  crop: `img = imread(INPUT_IMAGE);
-[h, w, ~] = size(img);
-% 裁剪中心区域
-cy = round(h/4); cx = round(w/4);
-cropped = img(cy+1:h-cy, cx+1:w-cx, :);
-imwrite(cropped, 'result.png');
-disp(['裁剪完成, 原图: ' mat2str([h w]) ' 裁剪后: ' mat2str(size(cropped))]);`,
-
   histogram: `img = imread(INPUT_IMAGE);
 if size(img, 3) == 3; gray = rgb2gray(img); else; gray = img; end
 imwrite(gray, 'result1.png');
@@ -2655,11 +2619,6 @@ const AI_HINTS = {
     ['hist的range参数是[0,256]不是[0,255]', 'ravel()将2D数组展平为1D'],
     'matplotlib的hist函数最简单直接；也可以用cv2.calcHist计算后用bar绘制'),
 
-  crop: H('帮我实现图像裁剪，提取图像中心区域并保存，输出原图和裁剪后的尺寸信息',
-    ['numpy切片(img[y1:y2, x1:x2])', 'img.shape获取尺寸'],
-    ['注意numpy切片是[y,x]不是[x,y]', '裁剪范围不能超出图像边界'],
-    '计算中心坐标后用numpy切片裁剪，最简单直接'),
-
   noise: H('帮我给图像添加高斯噪声和椒盐噪声，对比两种噪声的效果',
     ['numpy.random.normal()', 'numpy.random.randint()', 'numpy.clip()'],
     ['高斯噪声是加性噪声，椒盐噪声是随机将像素设为0或255', 'clip确保像素值在0-255范围'],
@@ -2860,7 +2819,7 @@ function getTemplate(simKey, title) {
 // ===================== DIFFICULTY MAP =====================
 const DIFFICULTY = {
   // Chapter 1: 概述
-  'gray': 1, 'channel-split': 1, 'resize': 1, 'crop': 1, 'histogram': 2, 'noise': 2,
+  'gray': 1, 'channel-split': 1, 'histogram': 2, 'noise': 2,
   // Chapter 2: 基础运算
   'translate': 1, 'rotate': 2, 'flip': 1, 'affine': 3, 'projection': 3,
   // Chapter 3: 基本运算
@@ -2895,7 +2854,6 @@ const REQ = {
   // Chapter 1
   gray: '将彩色RGB图像转换为灰度图像，使用加权平均法或直接调用库函数，输出灰度图像并统计尺寸和均值。',
   histogram: '统计灰度图像各灰度级的像素数量，绘制灰度直方图，横轴灰度值0-255，纵轴像素数量。',
-  crop: '从图像中裁剪中心区域，保存裁剪结果并输出原图和裁剪后的尺寸信息。',
   noise: '给图像分别添加高斯噪声和椒盐噪声，对比两种噪声对图像质量的影响。',
   // Chapter 2
   rotate: '将图像绕中心旋转指定角度（如45度），使用插值保持图像质量。',

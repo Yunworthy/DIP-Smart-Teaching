@@ -95,6 +95,15 @@ function migrate(db) {
   db.exec('UPDATE knowledge_points SET chapter_id=8 WHERE id=105');   // 区域分裂合并 -> Ch8
   db.exec('UPDATE knowledge_points SET chapter_id=11 WHERE id=106');  // 击中击不中 -> Ch11
 
+  // Insert new KP107: 基于点运算的空间增强 -> Ch4
+  db.exec(`INSERT OR IGNORE INTO knowledge_points (id, chapter_id, parent_id, title, description, difficulty, sort_order, category, principle) VALUES
+    (107, 4, NULL, '基于点运算的空间增强', '灰度变换与对比度增强的点运算方法', 2, 9, 'algorithm',
+     '点运算是指输出像素值仅取决于对应输入像素值的图像处理方法，包括伽马校正（幂律变换）和对比度拉伸（分段线性变换）。伽马校正 g=c*f^gamma 通过调整gamma参数控制亮暗区域的对比度；对比度拉伸通过扩展感兴趣灰度区间的动态范围来增强图像。这类方法计算简单、效果直观，是空间域增强的基础。')`);
+
+  // Link KP107 to gamma and contrast-stretch simulations
+  db.exec("INSERT OR IGNORE INTO kp_simulations (knowledge_point_id, simulation_key) VALUES (107, 'gamma')");
+  db.exec("INSERT OR IGNORE INTO kp_simulations (knowledge_point_id, simulation_key) VALUES (107, 'contrast-stretch')");
+
   console.log('[migrate] KP chapter_ids updated.');
 
   // ============================================================
@@ -107,8 +116,8 @@ function migrate(db) {
   // Ch2 (基础): noise/quantization from old Ch1
   for (const key of ['noise', 'quantize'])
     db.exec(`UPDATE simulations SET chapter_id=2 WHERE sim_key='${key}'`);
-  // Ch3 (基本运算): geometric transforms + gray-level ops from old Ch1
-  for (const key of ['translate', 'rotate', 'flip', 'affine', 'projection', 'invert', 'resize', 'crop', 'threshold'])
+  // Ch3 (基本运算): geometric transforms + gray-level ops
+  for (const key of ['translate', 'rotate', 'flip', 'affine', 'projection', 'invert', 'threshold'])
     db.exec(`UPDATE simulations SET chapter_id=3 WHERE sim_key='${key}'`);
   // Ch4 (空间域增强): spatial filtering + enhancement from old Ch2 + old Ch4 + histogram/gamma/contrast-stretch
   for (const key of ['smooth', 'sharpen', 'denoise', 'gradient', 'directional', 'emboss', 'hist-eq', 'clahe', 'log-transform', 'unsharp', 'histogram', 'gamma', 'contrast-stretch'])

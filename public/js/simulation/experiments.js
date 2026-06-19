@@ -1,6 +1,6 @@
 /**
  * experiments.js - 图像处理实验配置
- * 共69个实验，分12章，涵盖数字图像处理完整知识体系
+ * 共67个实验，分12章，涵盖数字图像处理完整知识体系
  * 导出: window.ExperimentConfig
  */
 
@@ -265,64 +265,6 @@ window.ExperimentConfig = {
     run(imageData, { channel = '红色' } = {}) {
       const map = { '红色': 'red', '绿色': 'green', '蓝色': 'blue' };
       return ImageEngine.colorChannel(imageData, map[channel] || 'red');
-    }
-  },
-
-  'resize': {
-    title: '图像缩放',
-    description: '使用最近邻插值对图像进行放大或缩小，观察分辨率变化对图像质量的影响',
-    categoryName: '基础',
-    category: 'basic',
-    chapter: 3,
-    sample: 'rice.bmp',
-    caseText: '在移动端部署图像识别时，输入图像需要缩放到模型要求的尺寸。不同的缩放算法（最近邻、双线性、双三次）在速度与质量之间取得不同的平衡。',
-    principle: '最近邻插值: dst(x,y) = src(round(x/sx), round(y/sy))，其中 sx=dstW/srcW, sy=dstH/srcH。该方法速度快但会产生锯齿。双线性插值使用周围4个像素的加权平均，效果更平滑。',
-    controls: [
-      { key: 'scale', label: '缩放比例', type: 'range', min: 0.25, max: 2.0, step: 0.25, default: 0.5 }
-    ],
-    run(imageData, { scale = 0.5 } = {}) {
-      const w = imageData.width, h = imageData.height;
-      const nw = Math.round(w * scale), nh = Math.round(h * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = nw; canvas.height = nh;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
-      const tmpCanvas = document.createElement('canvas');
-      tmpCanvas.width = w; tmpCanvas.height = h;
-      tmpCanvas.getContext('2d').putImageData(imageData, 0, 0);
-      ctx.drawImage(tmpCanvas, 0, 0, nw, nh);
-      return ctx.getImageData(0, 0, nw, nh);
-    }
-  },
-
-  'crop': {
-    title: '图像裁剪',
-    description: '从图像中裁剪指定区域，理解图像坐标系与ROI(感兴趣区域)概念',
-    categoryName: '基础',
-    category: 'basic',
-    chapter: 3,
-    sample: 'dehaze-sweden.jpg',
-    caseText: '在遥感图像分析中，往往只需要处理图像中的特定区域。裁剪操作提取ROI(Region of Interest)，减少不必要的计算，同时避免无关区域对处理算法的干扰。',
-    principle: '裁剪即从原图像矩阵中提取子矩阵: ROI = I[y:y+h, x:x+w]。需注意边界检查，确保裁剪区域不超出原图尺寸。图像坐标系以左上角为原点(0,0)，x向右、y向下。',
-    controls: [
-      { key: 'x', label: '起点X(%)', type: 'range', min: 0, max: 80, step: 5, default: 10 },
-      { key: 'y', label: '起点Y(%)', type: 'range', min: 0, max: 80, step: 5, default: 10 },
-      { key: 'w', label: '宽度(%)', type: 'range', min: 10, max: 100, step: 5, default: 50 },
-      { key: 'h', label: '高度(%)', type: 'range', min: 10, max: 100, step: 5, default: 50 }
-    ],
-    run(imageData, { x = 10, y = 10, w = 50, h = 50 } = {}) {
-      const iw = imageData.width, ih = imageData.height;
-      const sx = Math.round(iw * x / 100), sy = Math.round(ih * y / 100);
-      const sw = Math.round(iw * w / 100), sh = Math.round(ih * h / 100);
-      const ex = Math.min(sx + sw, iw), ey = Math.min(sy + sh, ih);
-      const cw = ex - sx, ch = ey - sy;
-      const canvas = document.createElement('canvas');
-      canvas.width = iw; canvas.height = ih;
-      canvas.getContext('2d').putImageData(imageData, 0, 0);
-      const outCanvas = document.createElement('canvas');
-      outCanvas.width = cw; outCanvas.height = ch;
-      outCanvas.getContext('2d').drawImage(canvas, sx, sy, cw, ch, 0, 0, cw, ch);
-      return outCanvas.getContext('2d').getImageData(0, 0, cw, ch);
     }
   },
 

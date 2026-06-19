@@ -481,10 +481,6 @@ async function seed() {
      J([]), 'assets/samples/rice.bmp', '在图像分析中，彩色信息往往不是必需的。灰度化是几乎所有后续处理的第一步——它将三维的RGB空间压缩为一维亮度值，大幅降低计算复杂度，同时保留图像的主要视觉特征。'],
     ['channel-split', '通道分离与观察', '将RGB图像分离为红、绿、蓝三个单通道，观察各通道亮度差异', 1, 'basic',
      J([]), 'assets/samples/red-date-defect.jpg', '在红枣缺陷检测中，缺陷区域可能在红色通道中表现明显而在蓝色通道中不明显。通道分离帮助分析哪些通道对目标检测最有用，为后续选择性处理提供依据。'],
-    ['resize', '图像缩放', '使用最近邻插值对图像进行放大或缩小，观察分辨率变化对图像质量的影响', 1, 'basic',
-     J([]), 'assets/samples/rice.bmp', '在移动端部署图像识别时，输入图像需要缩放到模型要求的尺寸。不同的缩放算法（最近邻、双线性、双三次）在速度与质量之间取得不同的平衡。'],
-    ['crop', '图像裁剪', '从图像中裁剪指定区域，理解图像坐标系与ROI(感兴趣区域)概念', 1, 'basic',
-     J([]), 'assets/samples/dehaze-sweden.jpg', '在遥感图像分析中，往往只需要处理图像中的特定区域。裁剪操作提取ROI(Region of Interest)，减少不必要的计算，同时避免无关区域对处理算法的干扰。'],
     ['histogram', '直方图计算与显示', '统计灰度图像各灰度级的像素数量，绘制灰度直方图', 1, 'basic',
      J([]), 'assets/samples/rice.bmp', '直方图是图像灰度分布的统计描述，是图像增强、阈值选取等处理的重要依据。通过观察直方图的峰谷分布，可以判断图像的对比度、亮度以及是否存在明显的目标-背景分离。'],
     ['noise', '噪声添加与观察', '向图像添加高斯噪声和椒盐噪声，观察不同噪声类型对图像的影响', 1, 'basic',
@@ -690,12 +686,12 @@ async function seed() {
 
   const kpSimLinks = [
     // === Chapter 1 KPs (IDs 1-10) ===
-    // KP1 数字图像概念 → gray, resize
-    [1,'gray'],[1,'resize'],
-    // KP2 采样与量化 → resize, quantize
-    [2,'resize'],[2,'quantize'],
-    // KP3 像素与分辨率 → resize, crop
-    [3,'resize'],[3,'crop'],
+    // KP1 数字图像概念 → gray
+    [1,'gray'],
+    // KP2 采样与量化 → quantize
+    [2,'quantize'],
+    // KP3 像素与分辨率 → noise
+    [3,'noise'],
     // KP4 图像处理系统组成 → gray, pipeline
     [4,'gray'],[4,'pipeline'],
     // KP5 图像质量评价 → noise, denoise
@@ -712,8 +708,8 @@ async function seed() {
     [10,'batch'],[10,'pipeline'],
 
     // === Chapter 2 KPs (IDs 11-20) ===
-    // KP11 图像矩阵表示 → gray, crop
-    [11,'gray'],[11,'crop'],
+    // KP11 图像矩阵表示 → gray
+    [11,'gray'],
     // KP12 像素邻域 → smooth, gradient
     [12,'smooth'],[12,'gradient'],
     // KP13 灰度直方图定义 → histogram, hist-eq
