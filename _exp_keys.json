@@ -1,0 +1,587 @@
+[
+  {
+    "key": "gray",
+    "title": "图像灰度化",
+    "chapter": 1,
+    "category": "basic",
+    "description": "将彩色RGB图像转换为灰度图像，理解加权平均法的原理与实现",
+    "sample": "rice.bmp",
+    "caseText": "在图像分析中，彩色信息往往不是必需的。灰度化是几乎所有后续处理的第一步——它将三维的RGB空间压缩为一维亮度值，大幅降低计算复杂度，同时保留图像的主要视觉特征。"
+  },
+  {
+    "key": "channel-split",
+    "title": "通道分离与观察",
+    "chapter": 1,
+    "category": "basic",
+    "description": "将RGB图像分离为红、绿、蓝三个单通道，观察各通道亮度差异",
+    "sample": "red-date-defect.jpg",
+    "caseText": "在红枣缺陷检测中，缺陷区域可能在红色通道中表现明显而在蓝色通道中不明显。通道分离帮助分析哪些通道对目标检测最有用，为后续选择性处理提供依据。"
+  },
+  {
+    "key": "resize",
+    "title": "图像缩放",
+    "chapter": 1,
+    "category": "basic",
+    "description": "使用最近邻插值对图像进行放大或缩小，观察分辨率变化对图像质量的影响",
+    "sample": "rice.bmp",
+    "caseText": "在移动端部署图像识别时，输入图像需要缩放到模型要求的尺寸。不同的缩放算法（最近邻、双线性、双三次）在速度与质量之间取得不同的平衡。"
+  },
+  {
+    "key": "crop",
+    "title": "图像裁剪",
+    "chapter": 1,
+    "category": "basic",
+    "description": "从图像中裁剪指定区域，理解图像坐标系与ROI(感兴趣区域)概念",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "在遥感图像分析中，往往只需要处理图像中的特定区域。裁剪操作提取ROI(Region of Interest)，减少不必要的计算，同时避免无关区域对处理算法的干扰。"
+  },
+  {
+    "key": "histogram",
+    "title": "直方图计算与显示",
+    "chapter": 1,
+    "category": "basic",
+    "description": "统计灰度图像各灰度级的像素数量，绘制灰度直方图",
+    "sample": "rice.bmp",
+    "caseText": "直方图是图像灰度分布的统计描述，是图像增强、阈值选取等处理的重要依据。通过观察直方图的峰谷分布，可以判断图像的对比度、亮度以及是否存在明显的目标-背景分离。"
+  },
+  {
+    "key": "noise",
+    "title": "噪声添加与观察",
+    "chapter": 1,
+    "category": "basic",
+    "description": "向图像添加高斯噪声和椒盐噪声，观察不同噪声类型对图像的影响",
+    "sample": "rice.bmp",
+    "caseText": "实际采集的图像不可避免地受到噪声污染。理解噪声的统计特性是设计有效去噪算法的前提。高斯噪声模拟传感器热噪声，椒盐噪声模拟传输误码和传感器坏点。"
+  },
+  {
+    "key": "translate",
+    "title": "图像平移",
+    "chapter": 2,
+    "category": "basic",
+    "description": "对图像进行水平和垂直方向的平移变换，理解仿射变换基础",
+    "sample": "rice.bmp",
+    "caseText": "图像平移是最基本的几何变换，在图像配准、运动补偿等应用中广泛使用。平移操作将图像中每个像素按相同的方向和距离移动。"
+  },
+  {
+    "key": "rotate",
+    "title": "图像旋转",
+    "chapter": 2,
+    "category": "basic",
+    "description": "围绕图像中心进行旋转变换，理解旋转矩阵与插值方法",
+    "sample": "rice.bmp",
+    "caseText": "在文档扫描校正和遥感图像配准中，旋转是常见操作。旋转后的像素坐标通常为浮点数，需要通过插值确定新像素值。"
+  },
+  {
+    "key": "flip",
+    "title": "图像翻转",
+    "chapter": 2,
+    "category": "basic",
+    "description": "对图像进行水平翻转和垂直翻转，理解镜像变换",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "在数据增强中，图像翻转是扩充训练样本的常用手段。水平翻转不改变图像内容含义（如人脸），但垂直翻转在大多数自然场景中不适用。"
+  },
+  {
+    "key": "affine",
+    "title": "仿射变换",
+    "chapter": 2,
+    "category": "design",
+    "description": "对图像进行错切(剪切)变换，理解一般仿射变换的矩阵表示",
+    "sample": "rice.bmp",
+    "caseText": "仿射变换是图像处理中最常用的几何变换类型，它保持直线的\"直线性\"和平行线的\"平行性\"。在图像校正、透视变换预处理等场景中广泛使用。"
+  },
+  {
+    "key": "projection",
+    "title": "投影变换",
+    "chapter": 2,
+    "category": "design",
+    "description": "对图像进行透视投影变换，理解单应性矩阵与四点映射",
+    "sample": "logs.jpg",
+    "caseText": "在文档扫描应用中，拍摄的文档往往是透视畸变的。通过检测文档四个角点并计算单应性矩阵，可以将畸变的文档校正为正面平视的效果。"
+  },
+  {
+    "key": "invert",
+    "title": "图像反色",
+    "chapter": 3,
+    "category": "basic",
+    "description": "对灰度图像进行反色处理(负片效果)，理解线性灰度变换",
+    "sample": "rice.bmp",
+    "caseText": "反色变换在医学影像中常用于\"底片\"显示——某些细节在反色后更容易被观察到。反色也是许多图像特效的基础操作。"
+  },
+  {
+    "key": "gamma",
+    "title": "伽马校正",
+    "chapter": 3,
+    "category": "basic",
+    "description": "通过幂律变换调整图像亮度，理解非线性灰度映射",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "相机传感器的响应通常是非线性的，伽马校正用于补偿这种非线性。gamma<1时提亮暗部细节(如夜景增强)，gamma>1时压缩亮部(如高光抑制)。"
+  },
+  {
+    "key": "contrast-stretch",
+    "title": "对比度拉伸",
+    "chapter": 3,
+    "category": "basic",
+    "description": "通过分段线性变换扩展图像的灰度范围，增强对比度",
+    "sample": "weld.jpg",
+    "caseText": "焊缝图像的灰度范围往往较窄，对比度拉伸可以将灰度值映射到完整的[0,255]范围，使焊缝细节更加清晰可见。"
+  },
+  {
+    "key": "threshold",
+    "title": "灰度阈值处理",
+    "chapter": 3,
+    "category": "basic",
+    "description": "使用固定阈值将灰度图像转换为二值图像，实现目标与背景分离",
+    "sample": "rice.bmp",
+    "caseText": "在米粒计数应用中，阈值化是分割米粒与背景的关键步骤。选择合适的阈值直接决定分割质量——阈值过高会丢失小颗粒，过低则会将噪声误认为目标。"
+  },
+  {
+    "key": "quantize",
+    "title": "多级别量化",
+    "chapter": 3,
+    "category": "basic",
+    "description": "将灰度图像量化为指定级别数，理解灰度分辨率与图像质量的关系",
+    "sample": "rice.bmp",
+    "caseText": "量化级别决定了图像的灰度分辨率。8级量化(3bit)会产生明显的伪轮廓效应，而2级量化就是二值化。理解量化有助于图像压缩和特征简化。"
+  },
+  {
+    "key": "smooth",
+    "title": "平滑滤波",
+    "chapter": 4,
+    "category": "basic",
+    "description": "使用均值滤波和中值滤波对图像进行平滑处理，比较线性与非线性滤波效果",
+    "sample": "rice.bmp",
+    "caseText": "平滑滤波是去除噪声的基本手段。均值滤波简单有效但会模糊边缘，中值滤波在去除椒盐噪声的同时能较好地保持边缘——这体现了线性与非线性滤波器的本质区别。"
+  },
+  {
+    "key": "sharpen",
+    "title": "锐化滤波",
+    "chapter": 4,
+    "category": "basic",
+    "description": "使用拉普拉斯算子和USM方法增强图像边缘与细节",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "锐化是图像增强的重要手段，在摄影后期、医学影像增强中广泛使用。拉普拉斯锐化通过增强二阶导数来突出细节，USM锐化则更加自然可控。"
+  },
+  {
+    "key": "denoise",
+    "title": "去噪处理",
+    "chapter": 4,
+    "category": "design",
+    "description": "对含噪图像进行去噪处理，比较不同滤波器在不同噪声下的表现",
+    "sample": "rice.bmp",
+    "caseText": "去噪是图像预处理的核心任务。不同噪声类型需要不同的去噪策略——高斯噪声适合均值或高斯滤波，椒盐噪声适合中值滤波。实际应用中往往需要先判断噪声类型再选择算法。"
+  },
+  {
+    "key": "gradient",
+    "title": "梯度计算",
+    "chapter": 4,
+    "category": "design",
+    "description": "计算图像的梯度幅值和方向，理解一阶导数在图像处理中的意义",
+    "sample": "rice.bmp",
+    "caseText": "梯度反映了图像灰度的变化率和方向，是边缘检测的基础。梯度幅值大的地方通常对应边缘或纹理区域，梯度方向指向灰度增长最快的方向。"
+  },
+  {
+    "key": "directional",
+    "title": "方向滤波",
+    "chapter": 4,
+    "category": "design",
+    "description": "使用方向性检测核提取特定角度的边缘特征",
+    "sample": "logs.jpg",
+    "caseText": "在木材纹理分析中，不同方向的纹理代表不同的结构特征。方向滤波可以选择性地增强特定方向的边缘，抑制其他方向的特征。"
+  },
+  {
+    "key": "emboss",
+    "title": "浮雕效果",
+    "chapter": 4,
+    "category": "design",
+    "description": "使用非对称卷积核实现浮雕(Emboss)立体效果，理解方向性滤波的创意应用",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "浮雕效果通过模拟光照方向使图像呈现三维立体感。它在艺术滤镜和图像特效中广泛应用，同时也是理解卷积核方向选择性的生动示例。"
+  },
+  {
+    "key": "fft",
+    "title": "二维傅里叶变换",
+    "chapter": 5,
+    "category": "basic",
+    "description": "对图像进行2D DFT并显示频谱图，理解频域分析基础",
+    "sample": "rice.bmp",
+    "caseText": "傅里叶变换将图像从空间域转换到频率域。频谱中的低频分量对应图像的平滑区域，高频分量对应边缘和细节。频域分析为滤波、压缩等操作提供了理论基础。"
+  },
+  {
+    "key": "lowpass-freq",
+    "title": "频域低通滤波",
+    "chapter": 5,
+    "category": "basic",
+    "description": "在频域中使用理想低通滤波器去除高频分量，实现图像模糊",
+    "sample": "rice.bmp",
+    "caseText": "频域低通滤波让低频分量通过而抑制高频分量，效果类似于空间域的平滑滤波，但可以在频率维度精确控制截止频率。理想低通滤波会产生振铃效应。"
+  },
+  {
+    "key": "highpass-freq",
+    "title": "频域高通滤波",
+    "chapter": 5,
+    "category": "basic",
+    "description": "在频域中使用高通滤波器增强高频分量，实现边缘提取",
+    "sample": "rice.bmp",
+    "caseText": "高通滤波抑制低频保留高频，等效于空间域的边缘增强。与空间域的拉普拉斯滤波相比，频域高通滤波可以精确控制截止频率，实现更灵活的频率选择。"
+  },
+  {
+    "key": "bandpass-freq",
+    "title": "频域带通滤波",
+    "chapter": 5,
+    "category": "design",
+    "description": "选择特定频率范围的信号通过，抑制过低和过高的频率分量",
+    "sample": "logs.jpg",
+    "caseText": "带通滤波在纹理分析中非常有用——特定的纹理周期对应特定的频率带。通过选择适当的频率带，可以提取感兴趣的纹理模式。"
+  },
+  {
+    "key": "homomorphic",
+    "title": "同态滤波",
+    "chapter": 5,
+    "category": "design",
+    "description": "通过频域处理同时压缩动态范围和增强对比度，解决光照不均匀问题",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "在光照不均匀的图像中(如阴影区域)，同态滤波可以压缩低频光照分量同时增强高频反射分量，使暗区细节可见而亮区不过曝。广泛用于遥感、医学影像。"
+  },
+  {
+    "key": "hist-eq",
+    "title": "直方图均衡化",
+    "chapter": 6,
+    "category": "basic",
+    "description": "通过累积分布函数映射实现直方图均衡，增强图像整体对比度",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "直方图均衡化是自适应的对比度增强方法——它不需要人工设定参数，自动将灰度分布拉平。在雾天图像增强、医学影像增强中效果显著。"
+  },
+  {
+    "key": "clahe",
+    "title": "自适应直方图均衡",
+    "chapter": 6,
+    "category": "design",
+    "description": "将图像分块进行局部直方图均衡，解决全局均衡丢失局部细节的问题",
+    "sample": "weld.jpg",
+    "caseText": "全局直方图均衡可能使某些区域的对比度反而降低。CLAHE(自适应直方图均衡)将图像分成小块分别均衡，并通过双线性插值消除块效应，是实际工业应用中的首选方法。"
+  },
+  {
+    "key": "log-transform",
+    "title": "对数变换增强",
+    "chapter": 6,
+    "category": "basic",
+    "description": "使用对数函数扩展暗区灰度级，增强低亮度区域的细节",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "在夜景或高动态范围场景中，暗部细节往往难以辨认。对数变换将暗区的灰度差异放大，同时压缩亮区的灰度范围，使整体细节更加均衡。"
+  },
+  {
+    "key": "unsharp",
+    "title": "USM锐化",
+    "chapter": 6,
+    "category": "design",
+    "description": "非锐化掩模(USM)方法：先模糊图像，再与原图做差得到高频掩模，增强细节",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "USM锐化是Photoshop等图像处理软件中最常用的锐化方法。相比拉普拉斯锐化，USM可以通过调整模糊半径控制增强的频率范围，效果更加自然。"
+  },
+  {
+    "key": "color-enhance",
+    "title": "彩色图像增强",
+    "chapter": 6,
+    "category": "design",
+    "description": "在HSV色彩空间中对亮度通道进行直方图均衡，保持色彩不变",
+    "sample": "red-date-defect.jpg",
+    "caseText": "直接对RGB三个通道分别做均衡化会改变图像的色彩平衡。正确做法是转换到HSV空间，只对V(亮度)通道做均衡，H(色调)和S(饱和度)保持不变。"
+  },
+  {
+    "key": "motion-blur",
+    "title": "运动模糊模拟",
+    "chapter": 7,
+    "category": "basic",
+    "description": "模拟相机或物体的运动造成的线性运动模糊效果",
+    "sample": "rice.bmp",
+    "caseText": "运动模糊是摄影中最常见的退化因素之一。理解运动模糊的数学模型是后续逆滤波和维纳滤波复原的基础。运动模糊核的形状由运动方向和长度决定。"
+  },
+  {
+    "key": "defocus-blur",
+    "title": "离焦模糊模拟",
+    "chapter": 7,
+    "category": "basic",
+    "description": "模拟镜头离焦造成的圆形散焦模糊效果",
+    "sample": "rice.bmp",
+    "caseText": "离焦模糊在显微镜成像和摄影中很常见。与运动模糊不同，离焦模糊的核是圆盘形的(散焦斑)。离焦程度由光圈和焦距决定。"
+  },
+  {
+    "key": "inverse-filter",
+    "title": "逆滤波复原",
+    "chapter": 7,
+    "category": "design",
+    "description": "对退化图像应用逆滤波，尝试恢复原始图像(在频域中实现)",
+    "sample": "rice.bmp",
+    "caseText": "逆滤波是最直接的复原方法——用退化函数的倒数去\"撤销\"退化。但在退化函数接近零的频率处，逆滤波会无限放大噪声，因此实际效果往往不理想。"
+  },
+  {
+    "key": "wiener-filter",
+    "title": "维纳滤波复原",
+    "chapter": 7,
+    "category": "design",
+    "description": "使用维纳滤波器在最小均方误差意义下进行最优图像复原",
+    "sample": "rice.bmp",
+    "caseText": "维纳滤波是逆滤波的改进版本——它考虑了噪声的影响，在退化函数接近零时不会无限放大噪声。它是图像复原领域最经典的算法之一，被广泛应用于各种退化场景。"
+  },
+  {
+    "key": "blind-deconv",
+    "title": "盲反卷积估计",
+    "chapter": 7,
+    "category": "comprehensive",
+    "description": "在不知道退化函数的情况下，估计退化核并复原图像",
+    "sample": "rice.bmp",
+    "caseText": "在实际应用中，退化函数往往是未知的。盲反卷积同时估计退化核和原始图像，是一个病态问题。通常假设核具有特定形式(如运动模糊的直线核)，并加入正则化约束。"
+  },
+  {
+    "key": "sobel",
+    "title": "Sobel边缘检测",
+    "chapter": 8,
+    "category": "basic",
+    "description": "使用Sobel算子检测图像边缘，结合梯度幅值和方向信息",
+    "sample": "rice.bmp",
+    "caseText": "Sobel算子是最经典的边缘检测算子之一，它结合了差分和平滑，对噪声有一定的抑制能力。在工业检测、车牌识别等应用中仍被广泛使用。"
+  },
+  {
+    "key": "canny",
+    "title": "Canny边缘检测",
+    "chapter": 8,
+    "category": "design",
+    "description": "实现Canny边缘检测器的核心步骤：高斯平滑、梯度计算、非极大值抑制",
+    "sample": "rice.bmp",
+    "caseText": "Canny边缘检测器在\"好的检测、好的定位、单响应\"三个准则下是最优的。它是目前实际应用中效果最好的传统边缘检测算法，广泛用于计算机视觉的特征提取。"
+  },
+  {
+    "key": "threshold-seg",
+    "title": "阈值分割",
+    "chapter": 8,
+    "category": "basic",
+    "description": "使用Otsu自动阈值法或手动阈值进行图像二值分割",
+    "sample": "rice.bmp",
+    "caseText": "阈值分割是最简单直观的图像分割方法——将图像分为目标和背景两类。Otsu法自动选择使类间方差最大的阈值，在双峰直方图的图像上效果很好。"
+  },
+  {
+    "key": "region-grow",
+    "title": "区域生长分割",
+    "chapter": 8,
+    "category": "design",
+    "description": "从种子点开始，将与种子灰度相似的相邻像素归入同一区域",
+    "sample": "weld.jpg",
+    "caseText": "在焊缝检测中，区域生长可以从焊缝中心开始，逐步将灰度相近的相邻像素归入焊缝区域。该方法需要选择种子点和相似度阈值，适合分割灰度均匀的区域。"
+  },
+  {
+    "key": "watershed",
+    "title": "分水岭分割",
+    "chapter": 8,
+    "category": "comprehensive",
+    "description": "基于地形类比的图像分割方法，适用于粘连目标的分离",
+    "sample": "rice.bmp",
+    "caseText": "在米粒计数中，粘连的米粒无法通过简单阈值分割。分水岭算法将灰度图像视为地形表面，通过模拟\"浸水\"过程找到自然分割线，能有效分离粘连目标。"
+  },
+  {
+    "key": "kmeans-seg",
+    "title": "K-means聚类分割",
+    "chapter": 8,
+    "category": "comprehensive",
+    "description": "使用K-means聚类算法将图像像素分为K个类别，实现无监督分割",
+    "sample": "red-date-defect.jpg",
+    "caseText": "K-means分割不需要预设阈值或种子点——它自动将像素按灰度(或颜色)聚类为K组。在红枣缺陷检测中，可以将像素分为正常、缺陷、背景等类别。"
+  },
+  {
+    "key": "erode",
+    "title": "腐蚀操作",
+    "chapter": 9,
+    "category": "basic",
+    "description": "对二值图像进行腐蚀操作，缩小目标区域并消除细小连接",
+    "sample": "rice.bmp",
+    "caseText": "腐蚀可以消除目标边缘的小突起和细线连接，在去除噪声点和分离粘连目标时非常有用。腐蚀后的目标面积会缩小。"
+  },
+  {
+    "key": "dilate",
+    "title": "膨胀操作",
+    "chapter": 9,
+    "category": "basic",
+    "description": "对二值图像进行膨胀操作，扩大目标区域并填充小孔洞",
+    "sample": "rice.bmp",
+    "caseText": "膨胀可以填充目标内部的小孔洞和裂缝，连接邻近的目标。在预处理中常与腐蚀配合使用——先膨胀填充孔洞，再腐蚀恢复大小。"
+  },
+  {
+    "key": "open-close",
+    "title": "开闭运算",
+    "chapter": 9,
+    "category": "basic",
+    "description": "开运算(先腐蚀后膨胀)和闭运算(先膨胀后腐蚀)的组合操作",
+    "sample": "rice.bmp",
+    "caseText": "开运算可以消除目标中细小的突出部分和窄的连接，同时基本保持目标大小不变。闭运算则填充目标中的小孔洞，连接邻近目标。它们是形态学中最实用的组合操作。"
+  },
+  {
+    "key": "morph-edge",
+    "title": "形态学边缘检测",
+    "chapter": 9,
+    "category": "design",
+    "description": "利用形态学膨胀和腐蚀的差值来提取目标边缘",
+    "sample": "rice.bmp",
+    "caseText": "形态学边缘检测相比梯度方法，对噪声更鲁棒且产生的边缘更细。在工业零件检测中，形态学边缘可以准确提取工件轮廓。"
+  },
+  {
+    "key": "skeleton",
+    "title": "骨架提取",
+    "chapter": 9,
+    "category": "design",
+    "description": "通过迭代细化算法提取目标的中心骨架线",
+    "sample": "rice.bmp",
+    "caseText": "骨架保留了目标的拓扑结构(连通性)和形状信息，同时大幅减少数据量。在字符识别、指纹识别、血管分析中，骨架提取是关键预处理步骤。"
+  },
+  {
+    "key": "tophat",
+    "title": "顶帽与底帽变换",
+    "chapter": 9,
+    "category": "design",
+    "description": "顶帽变换提取比周围亮的小目标，底帽变换提取比周围暗的小目标",
+    "sample": "weld.jpg",
+    "caseText": "在焊缝X射线检测中，顶帽变换可以突出焊缝中的小缺陷(气孔、夹渣)——这些缺陷比周围区域略亮或略暗。顶帽 = 原图 - 开运算，消除大范围背景变化后保留小目标。"
+  },
+  {
+    "key": "histogram-feature",
+    "title": "直方图特征提取",
+    "chapter": 10,
+    "category": "basic",
+    "description": "从灰度直方图中计算统计特征：均值、方差、偏度、峰度、熵",
+    "sample": "rice.bmp",
+    "caseText": "直方图统计特征是图像分类中最简单的特征描述子。均值反映亮度，方差反映对比度，偏度反映分布不对称性，峰度反映尖锐程度，熵反映信息量。"
+  },
+  {
+    "key": "glcm",
+    "title": "灰度共生矩阵(GLCM)",
+    "chapter": 10,
+    "category": "design",
+    "description": "计算灰度共生矩阵并提取纹理特征：能量、对比度、相关性、熵",
+    "sample": "logs.jpg",
+    "caseText": "GLCM是纹理分析的经典方法。在木材分类中，不同树种的纹理有不同的GLCM特征——年轮清晰的木材对比度高，纹理细腻的木材能量高。"
+  },
+  {
+    "key": "edge-feature",
+    "title": "边缘特征统计",
+    "chapter": 10,
+    "category": "basic",
+    "description": "检测边缘并统计边缘密度、平均长度、方向分布等特征",
+    "sample": "rice.bmp",
+    "caseText": "边缘特征反映了图像的结构复杂度。边缘密度高说明纹理丰富，边缘方向分布可以判断纹理的主方向。在图像分类和场景理解中非常有用。"
+  },
+  {
+    "key": "region-feature",
+    "title": "区域特征描述",
+    "chapter": 10,
+    "category": "design",
+    "description": "分割后提取各连通区域的面积、周长、圆形度、离心率等形状特征",
+    "sample": "rice.bmp",
+    "caseText": "在米粒品质检测中，通过区域特征可以自动分类: 完整米粒面积适中、圆形度较高，碎粒面积小，杂质形状不规则。区域特征是目标分类的基础。"
+  },
+  {
+    "key": "hough",
+    "title": "Hough直线检测",
+    "chapter": 10,
+    "category": "design",
+    "description": "使用Hough变换检测图像中的直线，输出直线参数和检测结果",
+    "sample": "logs.jpg",
+    "caseText": "在木材加工中，检测原木的直线边缘对于自动定位和切割非常重要。Hough变换将图像空间中的直线检测问题转换为参数空间中的峰值搜索问题。"
+  },
+  {
+    "key": "template",
+    "title": "模板匹配",
+    "chapter": 10,
+    "category": "comprehensive",
+    "description": "使用归一化互相关在图像中搜索与模板最相似的区域",
+    "sample": "rice.bmp",
+    "caseText": "模板匹配是最简单的目标定位方法——用一个小的模板图像在大的搜索图像中滑动，计算每个位置的相似度。在工业定位、字符识别中有广泛应用。"
+  },
+  {
+    "key": "batch",
+    "title": "批量图像处理",
+    "chapter": 11,
+    "category": "comprehensive",
+    "description": "对多张图像执行相同的处理流水线，实现自动化批量处理",
+    "sample": "rice.bmp",
+    "caseText": "在工业生产线中，需要对大量图像执行相同的处理流程(如质检)。批量处理通过预设的处理流水线自动处理每一张图像，提高效率并保证一致性。"
+  },
+  {
+    "key": "weld",
+    "title": "焊缝缺陷检测",
+    "chapter": 11,
+    "category": "comprehensive",
+    "description": "对焊缝X射线图像进行缺陷自动检测，识别气孔、裂纹等缺陷",
+    "sample": "weld.jpg",
+    "caseText": "焊缝X射线检测是工业质量控制的重要环节。通过图像增强突出缺陷区域，再用形态学处理和阈值分割提取缺陷，最后统计缺陷数量和面积。"
+  },
+  {
+    "key": "logcount",
+    "title": "原木计数系统",
+    "chapter": 11,
+    "category": "comprehensive",
+    "description": "对原木截面图像进行自动计数，利用形态学分离和连通域分析",
+    "sample": "logs.jpg",
+    "caseText": "在木材加工场，需要快速准确地统计原木数量。通过图像处理自动计数，可以替代人工清点，提高效率。核心挑战是分离粘连的原木截面。"
+  },
+  {
+    "key": "datesort",
+    "title": "红枣缺陷分选",
+    "chapter": 11,
+    "category": "comprehensive",
+    "description": "对红枣图像进行缺陷检测和等级分类，实现自动化品质分选",
+    "sample": "red-date-defect.jpg",
+    "caseText": "红枣品质分选需要检测表面缺陷(虫蛀、霉变、裂纹)并按缺陷面积分级。该实验综合运用灰度化、通道分析、阈值分割、形态学和区域特征提取。"
+  },
+  {
+    "key": "panorama",
+    "title": "全景图像拼接",
+    "chapter": 11,
+    "category": "comprehensive",
+    "description": "模拟两幅有重叠区域的图像拼接，理解特征匹配和图像融合",
+    "sample": "dehaze-sweden.jpg",
+    "caseText": "全景拼接通过检测相邻图像的重叠区域，找到最佳拼接缝并进行无缝融合。在地图制作、虚拟现实中广泛应用。简化版使用水平平移和线性融合。"
+  },
+  {
+    "key": "region-desc",
+    "title": "区域描述子",
+    "chapter": 12,
+    "category": "comprehensive",
+    "description": "计算区域的Hu不变矩、边界傅里叶描述子等高级形状描述子",
+    "sample": "rice.bmp",
+    "caseText": "区域描述子用于目标识别和分类。Hu不变矩对平移、旋转、缩放具有不变性，是形状识别的经典特征。边界傅里叶描述子可以紧凑地表示复杂形状。"
+  },
+  {
+    "key": "boundary-desc",
+    "title": "边界描述子",
+    "chapter": 12,
+    "category": "comprehensive",
+    "description": "提取目标边界并计算链码、傅里叶描述子等边界特征",
+    "sample": "rice.bmp",
+    "caseText": "边界描述子用于形状识别——不同物体的边界形状不同。傅里叶描述子将复杂的边界曲线表示为有限个频率分量，是形状匹配的高效方法。"
+  },
+  {
+    "key": "moments",
+    "title": "图像矩分析",
+    "chapter": 12,
+    "category": "design",
+    "description": "计算图像的几何矩和中心矩，用于目标定位和形状分析",
+    "sample": "rice.bmp",
+    "caseText": "图像矩是图像处理中的基础数学工具。零阶矩给出面积，一阶矩给出质心，二阶矩给出方向性。在机器人视觉中，矩用于目标跟踪和姿态估计。"
+  },
+  {
+    "key": "classify",
+    "title": "图像分类识别",
+    "chapter": 12,
+    "category": "comprehensive",
+    "description": "基于提取的特征对图像区域进行简单分类(最近邻分类器)",
+    "sample": "red-date-defect.jpg",
+    "caseText": "图像分类是计算机视觉的核心任务。本实验使用手工特征(灰度统计+GLCM+边缘密度)和最近邻分类器，展示传统机器学习方法的基本原理。"
+  },
+  {
+    "key": "pipeline",
+    "title": "完整处理流水线",
+    "chapter": 12,
+    "category": "comprehensive",
+    "description": "构建从图像输入到结果输出的完整处理流水线，集成多种算法",
+    "sample": "rice.bmp",
+    "caseText": "一个完整的图像处理系统包含: 预处理(去噪、增强)、分割(阈值、边缘)、特征提取(面积、形状)、后处理(形态学)和决策(计数、分类)。本实验集成全流程。"
+  }
+]

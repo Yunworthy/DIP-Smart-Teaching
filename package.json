@@ -1,0 +1,24 @@
+{
+  "name": "dip-teaching-platform",
+  "version": "2.0.0",
+  "description": "数字图像处理智慧教学与虚拟仿真平台",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node database/seed.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudflared": "^0.7.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.0",
+    "sql.js": "^1.10.3",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "localtunnel": "^2.0.2"
+  }
+}

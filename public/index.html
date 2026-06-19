@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <meta name="description" content="数字图像处理智慧教学平台 - 集教学、实验、管理于一体的智慧化图像处理学习系统" />
+  <meta name="keywords" content="数字图像处理,智慧教学,仿真实验,教学平台" />
+  <title>数字图像处理智慧教学平台</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔬</text></svg>" />
+
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50:  '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81'
+            },
+            accent: {
+              50:  '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              300: '#5eead4',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/custom.css" />
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+  <!-- Vue 3 Mount Point -->
+  <div id="app"></div>
+
+  <!-- ===== Vendor Libraries (CDN) ===== -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+  <!-- CodeMirror 5 for code editing -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/octave/octave.min.js"></script>
+
+  <!-- ===== Application Scripts ===== -->
+
+  <!-- Core: store & API layer -->
+  <script src="js/store.js"></script>
+  <script src="js/api.js"></script>
+
+  <!-- Router -->
+  <script src="js/router.js"></script>
+
+  <!-- Shared Components -->
+  <script src="js/components/AppHeader.js"></script>
+  <script src="js/components/AppSidebar.js"></script>
+  <script src="js/components/AppFooter.js"></script>
+  <script src="js/components/ModalDialog.js"></script>
+  <script src="js/components/ConfirmDialog.js"></script>
+  <script src="js/components/DataTable.js"></script>
+  <script src="js/components/Pagination.js"></script>
+  <script src="js/components/ChartPanel.js"></script>
+  <script src="js/components/FileUpload.js"></script>
+  <script src="js/components/NotificationToast.js"></script>
+  <script src="js/components/LoadingSpinner.js"></script>
+  <script src="js/components/EmptyState.js"></script>
+  <script src="js/components/KnowledgeGraph.js"></script>
+  <script src="js/components/ImagePreview.js"></script>
+  <script src="js/components/CodeEditor.js"></script>
+  <script src="js/components/ConceptAnimation.js"></script>
+  <script src="js/components/NotificationBell.js"></script>
+
+  <!-- Animation Modules (registry first, then modules, then remap) -->
+  <script src="js/animations/animation-registry.js"></script>
+  <script src="js/animations/hist-eq-anim.js"></script>
+  <script src="js/animations/hist-spec-anim.js"></script>
+  <script src="js/animations/convolution-anim.js"></script>
+  <script src="js/animations/erode-dilate-anim.js"></script>
+  <script src="js/animations/open-close-anim.js"></script>
+  <script src="js/animations/edge-detect-anim.js"></script>
+  <script src="js/animations/fft-anim.js"></script>
+  <script src="js/animations/threshold-anim.js"></script>
+  <script src="js/animations/huffman-anim.js"></script>
+  <script src="js/animations/rle-anim.js"></script>
+  <script src="js/animations/dct-anim.js"></script>
+  <script src="js/animations/pca-anim.js"></script>
+  <script src="js/animations/region-growing-anim.js"></script>
+  <script src="js/animations/watershed-anim.js"></script>
+  <script src="js/animations/region-split-merge-anim.js"></script>
+  <script src="js/animations/glcm-anim.js"></script>
+  <script src="js/animations/lbp-anim.js"></script>
+  <script src="js/animations/edge-compare-anim.js"></script>
+  <script src="js/animations/hough-anim.js"></script>
+  <script src="js/animations/harris-anim.js"></script>
+  <script src="js/animations/skeleton-anim.js"></script>
+  <script src="js/animations/hog-anim.js"></script>
+  <script src="js/animations/hit-miss-anim.js"></script>
+  <script src="js/animations/bit-plane-anim.js"></script>
+  <!-- New animation modules -->
+  <script src="js/animations/mean-median-gaussian-anim.js"></script>
+  <script src="js/animations/laplacian-sharpen-anim.js"></script>
+  <script src="js/animations/unsharp-masking-anim.js"></script>
+  <script src="js/animations/filter-kernel-anim.js"></script>
+  <script src="js/animations/lowpass-filters-anim.js"></script>
+  <script src="js/animations/highpass-filters-anim.js"></script>
+  <script src="js/animations/degradation-model-anim.js"></script>
+  <script src="js/animations/noise-types-anim.js"></script>
+  <script src="js/animations/inverse-wiener-anim.js"></script>
+  <script src="js/animations/geometric-correction-anim.js"></script>
+  <script src="js/animations/color-models-anim.js"></script>
+  <script src="js/animations/pseudocolor-anim.js"></script>
+  <script src="js/animations/color-space-convert-anim.js"></script>
+  <script src="js/animations/white-balance-anim.js"></script>
+  <script src="js/animations/arithmetic-coding-anim.js"></script>
+  <script src="js/animations/jpeg-pipeline-anim.js"></script>
+  <script src="js/animations/morph-boundary-fill-anim.js"></script>
+  <script src="js/animations/connected-component-anim.js"></script>
+  <script src="js/animations/chain-code-anim.js"></script>
+  <script src="js/animations/template-matching-anim.js"></script>
+  <script src="js/animations/gamma-log-transform-anim.js"></script>
+  <script src="js/animations/sampling-quantization-anim.js"></script>
+  <script src="js/animations/image-quality-anim.js"></script>
+  <script src="js/animations/pixel-neighborhood-anim.js"></script>
+  <script src="js/animations/gray-histogram-anim.js"></script>
+  <script src="js/animations/animation-kp-remap.js"></script>
+
+  <!-- Experiment Configurations -->
+  <script src="js/simulation/experiments.js"></script>
+
+  <!-- Portal (bypass entry) -->
+  <script src="js/views/PortalView.js"></script>
+
+  <!-- Login View -->
+  <script src="js/views/LoginView.js"></script>
+
+  <!-- Student Views -->
+  <script src="js/views/student/StudentDashboard.js"></script>
+  <script src="js/views/student/CourseList.js"></script>
+  <script src="js/views/student/CourseDetail.js"></script>
+  <script src="js/views/student/ExperimentLab.js"></script>
+  <script src="js/views/student/ExperimentReport.js"></script>
+  <script src="js/views/student/KnowledgeMap.js"></script>
+  <script src="js/views/student/EnterpriseCaseView.js"></script>
+  <script src="js/views/student/MyAssignmentsView.js"></script>
+  <script src="js/views/student/HomeworkView.js"></script>
+  <script src="js/views/student/LabReportView.js"></script>
+  <script src="js/views/student/ProfileSettings.js"></script>
+  <script src="js/views/student/ExamList.js"></script>
+  <script src="js/views/student/ExamTake.js"></script>
+  <script src="js/views/student/AnnouncementList.js"></script>
+
+  <!-- Teacher Views -->
+  <script src="js/views/teacher/TeacherDashboard.js"></script>
+  <script src="js/views/teacher/CourseManage.js"></script>
+  <script src="js/views/teacher/ExperimentDesign.js"></script>
+  <script src="js/views/teacher/StudentAnalytics.js"></script>
+  <script src="js/views/teacher/AssignmentGrading.js"></script>
+  <script src="js/views/teacher/ResourceLibrary.js"></script>
+  <script src="js/views/teacher/StudentImport.js"></script>
+  <script src="js/views/teacher/ExamManage.js"></script>
+  <script src="js/views/teacher/QuestionBank.js"></script>
+
+  <!-- Admin Views -->
+  <script src="js/views/admin/AdminDashboard.js"></script>
+  <script src="js/views/admin/UserManage.js"></script>
+  <script src="js/views/admin/SystemConfig.js"></script>
+  <script src="js/views/admin/DataStatistics.js"></script>
+  <script src="js/views/admin/LogViewer.js"></script>
+
+  <!-- App Bootstrap (must be last) -->
+  <script src="js/app.js"></script>
+</body>
+</html>

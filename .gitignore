@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Database (runtime data)
+database/*.db
+database/*.sqlite
+
+# User uploads
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+*.log
+server.log
+tunnel-err.log
+tunnel-out.log
+tunnel.log
+
+# Tunnel tools (not part of source)
+frpc.exe
+frp.zip
+tunnel-url.txt
+
+# Accidental files
+console.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+.env.local
+config.secret.*
