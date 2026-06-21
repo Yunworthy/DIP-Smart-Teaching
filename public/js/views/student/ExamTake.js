@@ -31,6 +31,29 @@ var ExamTake = {
         </div>
       </div>
 
+      <!-- Load Error -->
+      <div v-else-if="loadError" class="flex items-center justify-center h-screen">
+        <div class="text-center bg-white rounded-xl shadow-lg p-8 max-w-md">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+            <svg class="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">加载失败</h3>
+          <p class="text-sm text-gray-500 mb-6">{{ loadError }}</p>
+          <div class="flex justify-center gap-3">
+            <button @click="loadExam" class="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">重新加载</button>
+            <button @click="backToList" class="px-5 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">返回列表</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Error Banner -->
+      <div v-if="submitError" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-[90] bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg text-sm flex items-center gap-3">
+        <span>{{ submitError }}</span>
+        <button @click="submitError = null" class="text-white opacity-70 hover:opacity-100">&times;</button>
+      </div>
+
       <!-- Exam content -->
       <div v-else class="pt-20 pb-8 px-6 flex gap-6 max-w-[1400px] mx-auto">
         <!-- Question navigation panel -->
@@ -204,11 +227,14 @@ var ExamTake = {
       answers: {},
       currentIdx: 0,
       remainingSeconds: 0,
+      timerEndTime: 0,
       timer: null,
       showConfirmDialog: false,
       showResult: false,
       resultData: null,
       saving: false,
+      loadError: null,
+      submitError: null,
     };
   },
   computed: {
@@ -243,6 +269,7 @@ var ExamTake = {
   methods: {
     async loadExam() {
       this.loading = true;
+      this.loadError = null;
       try {
         const data = await api.request('GET', '/api/exam/exams/' + this.examId + '/start');
         this.exam = data.exam;
@@ -253,27 +280,29 @@ var ExamTake = {
         if (data.savedAnswers) {
           this.answers = { ...data.savedAnswers };
         }
-        // Calculate remaining time
+        // Calculate remaining time based on server timestamps
         const startedAt = new Date(this.attempt.started_at + (this.attempt.started_at.includes('Z') ? '' : 'Z'));
         const elapsed = (Date.now() - startedAt.getTime()) / 1000;
         this.remainingSeconds = Math.max(0, (this.exam.duration_minutes * 60) - Math.floor(elapsed));
+        this.timerEndTime = Date.now() + this.remainingSeconds * 1000;
         // Start timer
         this.startTimer();
       } catch (e) {
-        console.error(e);
-        if (this.$router) this.$router.push('/student/exams');
+        console.error('Load exam error:', e);
+        this.loadError = e.message || '加载考试失败，请稍后重试';
       }
       this.loading = false;
     },
     startTimer() {
       if (this.timer) clearInterval(this.timer);
-      this.timer = setInterval(() => {
-        if (this.remainingSeconds > 0) {
-          this.remainingSeconds--;
-        } else {
-          clearInterval(this.timer);
-          this.timer = null;
-          this.autoSubmit();
+      const self = this;
+      this.timer = setInterval(function() {
+        var remaining = Math.max(0, Math.ceil((self.timerEndTime - Date.now()) / 1000));
+        self.remainingSeconds = remaining;
+        if (remaining <= 0) {
+          clearInterval(self.timer);
+          self.timer = null;
+          self.autoSubmit();
         }
       }, 1000);
     },
@@ -340,7 +369,8 @@ var ExamTake = {
         this.showResult = true;
         if (this.timer) { clearInterval(this.timer); this.timer = null; }
       } catch (e) {
-        console.error(e);
+        console.error('Submit exam error:', e);
+        this.submitError = '提交失败，请检查网络后重试';
       }
     },
     async autoSubmit() {
@@ -350,7 +380,8 @@ var ExamTake = {
         this.showResult = true;
         if (window.store && window.store.notify) window.store.notify('考试时间已到，已自动提交', 'warning');
       } catch (e) {
-        console.error(e);
+        console.error('Auto-submit error:', e);
+        this.submitError = '自动提交失败，请手动点击"提交试卷"按钮重试';
       }
     },
     backToList() {
@@ -359,11 +390,37 @@ var ExamTake = {
   },
   mounted() {
     this.loadExam();
+    // Prevent accidental browser close/refresh during exam
+    var self = this;
+    this._beforeUnloadHandler = function(e) {
+      if (self.timer && self.remainingSeconds > 0) {
+        e.preventDefault();
+        e.returnValue = '考试进行中，离开将丢失答题进度。';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', this._beforeUnloadHandler);
   },
   beforeUnmount() {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
+    }
+    if (this._beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+    }
+  },
+  beforeRouteLeave(to, from, next) {
+    // Allow navigation if exam is submitted or loaded with error
+    if (this.showResult || this.loadError || !this.timer) {
+      return next();
+    }
+    // Warn user about unsaved progress
+    var msg = '考试进行中，离开当前页面将丢失未保存的答题进度。确定要离开吗？';
+    if (window.confirm(msg)) {
+      next();
+    } else {
+      next(false);
     }
   },
 };

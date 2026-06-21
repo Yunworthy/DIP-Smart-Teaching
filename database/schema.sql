@@ -219,6 +219,7 @@ CREATE TABLE IF NOT EXISTS exam_attempts (
     exam_id INTEGER REFERENCES exams(id),
     student_id INTEGER REFERENCES users(id),
     answers TEXT,
+    question_order TEXT,
     total_score INTEGER,
     objective_score INTEGER,
     started_at DATETIME DEFAULT CURRENT_TIMESTAMP,

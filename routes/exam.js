@@ -420,16 +420,38 @@ router.get('/exams/:id/start', authenticate, requireRole('student'), (req, res) 
       ORDER BY em.sort_order
     `).all(req.params.id);
 
-    // Shuffle questions if configured
-    if (exam.shuffle_questions) {
-      for (let i = questions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [questions[i], questions[j]] = [questions[j], questions[i]];
-      }
+    // Determine question order: reuse persisted order on resume, or shuffle and persist on first start
+    let questionOrder = null;
+    if (attempt.question_order) {
+      try { questionOrder = JSON.parse(attempt.question_order); } catch (e) { questionOrder = null; }
     }
 
-    // Shuffle options for choice questions if configured
-    if (exam.shuffle_options) {
+    if (questionOrder && questionOrder.length > 0) {
+      // Resume: sort questions by the persisted order
+      const orderMap = {};
+      questionOrder.forEach((qId, idx) => { orderMap[qId] = idx; });
+      questions.sort((a, b) => (orderMap[a.id] !== undefined ? orderMap[a.id] : 999) - (orderMap[b.id] !== undefined ? orderMap[b.id] : 999));
+    } else {
+      // First start: shuffle if configured, then persist the order
+      if (exam.shuffle_questions) {
+        for (let i = questions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [questions[i], questions[j]] = [questions[j], questions[i]];
+        }
+      }
+      // Save the question order
+      const orderIds = questions.map(q => q.id);
+      try {
+        req.db.prepare('UPDATE exam_attempts SET question_order = ? WHERE id = ?').run(JSON.stringify(orderIds), attempt.id);
+        req.db.save();
+      } catch (e) { /* column may not exist yet */ }
+    }
+
+    // Shuffle options for choice questions if configured (only on first start, reuse on resume)
+    let optionMappings = null;
+    if (attempt.question_order) {
+      // Resume: options were already shuffled, no need to re-shuffle
+    } else if (exam.shuffle_options) {
       questions = questions.map(q => {
         if ((q.type === 'single_choice' || q.type === 'multi_choice') && q.options) {
           try {

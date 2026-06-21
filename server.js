@@ -10,6 +10,13 @@ async function startServer() {
   // Initialize database
   const db = await initDatabase(config.dbPath);
 
+  // Ensure exam_attempts has question_order column (migration)
+  try {
+    db.exec("ALTER TABLE exam_attempts ADD COLUMN question_order TEXT");
+  } catch (e) {
+    // Column already exists — safe to ignore
+  }
+
   // Middleware
   app.use(cors());
   app.use(express.json({ limit: '10mb' }));
