@@ -12,12 +12,14 @@ var CodeEditor = {
     readOnly: { type: Boolean, default: false }
   },
   data: function() {
-    return { editor: null };
+    return { editor: null, fallbackTextarea: null };
   },
   watch: {
     value: function(newVal) {
       if (this.editor && this.editor.getValue() !== newVal) {
         this.editor.setValue(newVal || '');
+      } else if (this.fallbackTextarea && this.fallbackTextarea.value !== newVal) {
+        this.fallbackTextarea.value = newVal || '';
       }
     },
     language: function(newLang) {
@@ -30,8 +32,28 @@ var CodeEditor = {
   mounted: function() {
     var self = this;
     if (typeof CodeMirror === 'undefined') {
-      // Fallback if CodeMirror CDN fails
-      this.$refs.container.innerHTML = '<textarea class="w-full font-mono text-sm p-3 border rounded" style="min-height:300px">' + (this.value || '') + '</textarea>';
+      // Fallback: create a reactive textarea
+      var ta = document.createElement('textarea');
+      ta.className = 'w-full font-mono text-sm p-3 border rounded bg-gray-900 text-green-300';
+      ta.style.cssText = 'min-height:300px; resize:vertical; outline:none; tab-size:4;';
+      ta.spellcheck = false;
+      ta.value = this.value || '';
+      ta.readOnly = this.readOnly;
+      ta.addEventListener('input', function() {
+        self.$emit('input', ta.value);
+      });
+      ta.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          var start = ta.selectionStart;
+          var end = ta.selectionEnd;
+          ta.value = ta.value.substring(0, start) + '    ' + ta.value.substring(end);
+          ta.selectionStart = ta.selectionEnd = start + 4;
+          self.$emit('input', ta.value);
+        }
+      });
+      this.$refs.container.appendChild(ta);
+      this.fallbackTextarea = ta;
       return;
     }
     var mode = this.language === 'octave' ? 'text/x-octave' : 'text/x-python';
@@ -67,10 +89,13 @@ var CodeEditor = {
   },
   methods: {
     getValue: function() {
-      return this.editor ? this.editor.getValue() : '';
+      if (this.editor) return this.editor.getValue();
+      if (this.fallbackTextarea) return this.fallbackTextarea.value;
+      return '';
     },
     setValue: function(val) {
-      if (this.editor) this.editor.setValue(val || '');
+      if (this.editor) { this.editor.setValue(val || ''); }
+      else if (this.fallbackTextarea) { this.fallbackTextarea.value = val || ''; }
     },
     refresh: function() {
       if (this.editor) {
@@ -84,5 +109,6 @@ var CodeEditor = {
       this.editor.toTextArea && this.editor.toTextArea();
       this.editor = null;
     }
+    this.fallbackTextarea = null;
   }
 };
