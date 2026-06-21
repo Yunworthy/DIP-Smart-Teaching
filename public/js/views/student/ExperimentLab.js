@@ -314,7 +314,7 @@ var ExperimentLab = {
           <div class="flex-1 min-w-0 space-y-4">
             <!-- Code Editor -->
             <div class="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-              <!-- Language Tabs -->
+              <!-- Language Tabs & Toolbar -->
               <div class="flex items-center border-b border-gray-100 px-4">
                 <button @click="switchLanguage('python')"
                   class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors"
@@ -327,6 +327,9 @@ var ExperimentLab = {
                   Octave/MATLAB
                 </button>
                 <div class="flex-1"></div>
+                <button @click="enableEdit" class="text-xs px-2 py-1 mr-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 font-medium" title="点击编辑代码">
+                  ✏️ 编辑代码
+                </button>
                 <button @click="copyCode" class="text-xs text-gray-400 hover:text-gray-600 p-2" title="复制代码">
                   <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 </button>
@@ -334,8 +337,19 @@ var ExperimentLab = {
                   <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 </button>
               </div>
-              <!-- Editor -->
-              <code-editor ref="editor" :value="code" :language="language" @input="onCodeInput"></code-editor>
+              <!-- Native textarea editor — guaranteed editable -->
+              <div ref="editorContainer" class="code-editor-container">
+                <textarea ref="codeArea"
+                  :value="code"
+                  @input="code = $event.target.value"
+                  @keydown.tab.prevent="insertTab"
+                  class="lab-code-textarea"
+                  spellcheck="false"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  placeholder="在此输入或修改代码..."></textarea>
+              </div>
             </div>
 
             <!-- Run Button Bar -->
@@ -619,11 +633,7 @@ var ExperimentLab = {
         requirements: true
       };
       var self = this;
-      this.$nextTick(function() {
-        if (self.$refs.editor && self.$refs.editor.refresh) {
-          self.$refs.editor.refresh();
-        }
-      });
+      // Textarea updates automatically via :value binding
     },
 
     // ---- Load experiments from API ----
@@ -657,12 +667,7 @@ var ExperimentLab = {
           self.sourceImageUrl = '';
           self.sourceImageName = '';
         }
-        // Refresh editor after DOM update
-        self.$nextTick(function() {
-          if (self.$refs.editor && self.$refs.editor.refresh) {
-            self.$refs.editor.refresh();
-          }
-        });
+        // Textarea updates automatically via :value binding
       }).catch(function(err) {
         console.error('Load experiment error:', err);
       });
@@ -681,13 +686,6 @@ var ExperimentLab = {
     switchLanguage: function(lang) {
       this.language = lang;
       this.code = lang === 'python' ? this.pythonTemplate : this.octaveTemplate;
-      var self = this;
-      this.$nextTick(function() {
-        if (self.$refs.editor) {
-          self.$refs.editor.setValue(self.code);
-          self.$refs.editor.refresh();
-        }
-      });
     },
 
     onCodeInput: function(val) {
@@ -696,12 +694,30 @@ var ExperimentLab = {
 
     resetCode: function() {
       this.code = this.language === 'python' ? this.pythonTemplate : this.octaveTemplate;
-      if (this.$refs.editor) this.$refs.editor.setValue(this.code);
+    },
+
+    enableEdit: function() {
+      // Focus the textarea so user can start editing immediately
+      if (this.$refs.codeArea) {
+        this.$refs.codeArea.focus();
+        if (window.store) store.notify('代码编辑区已激活，可以直接修改代码', 'success');
+      }
+    },
+
+    insertTab: function(e) {
+      var ta = e.target;
+      var start = ta.selectionStart;
+      var end = ta.selectionEnd;
+      var val = ta.value;
+      this.code = val.substring(0, start) + '    ' + val.substring(end);
+      var self = this;
+      this.$nextTick(function() {
+        ta.selectionStart = ta.selectionEnd = start + 4;
+      });
     },
 
     copyCode: function() {
-      var code = this.$refs.editor ? this.$refs.editor.getValue() : this.code;
-      navigator.clipboard.writeText(code).then(function() {
+      navigator.clipboard.writeText(this.code).then(function() {
         if (window.store) store.notify('代码已复制到剪贴板', 'success');
       });
     },
@@ -764,7 +780,7 @@ var ExperimentLab = {
         if (window.store) store.notify('请先上传或加载样例图像', 'error');
         return;
       }
-      var code = this.$refs.editor ? this.$refs.editor.getValue() : this.code;
+      var code = this.code;
       if (!code.trim()) {
         if (window.store) store.notify('请先编写代码', 'error');
         return;
@@ -795,7 +811,7 @@ var ExperimentLab = {
     // ---- Submit experiment ----
     submitExperiment: function() {
       var self = this;
-      var code = this.$refs.editor ? this.$refs.editor.getValue() : this.code;
+      var code = this.code;
       api.submitAssignment({
         content: this.submitSummary,
         simulation_result: JSON.stringify({

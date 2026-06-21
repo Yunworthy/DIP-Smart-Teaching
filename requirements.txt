@@ -1,0 +1,33 @@
+# =============================================================
+#  DIP Smart Teaching Platform — Python Dependencies
+#  数字图像处理智慧教学与虚拟仿真平台 — Python 依赖
+# =============================================================
+#  安装命令:  pip install -r requirements.txt
+#  Python版本: >= 3.9
+# =============================================================
+
+# ---- 核心科学计算 ----
+# python_helper.py 自动注入; 所有实验模板的数组/矩阵/FFT运算
+numpy>=1.24.0
+
+# ---- 计算机视觉 (OpenCV) ----
+# python_helper.py 注入 cv2; 灰度化/滤波/边缘检测/形态学/阈值/仿射等
+# 服务端运行选 headless 版(无GUI), 本地开发可换 opencv-python
+opencv-python-headless>=4.8.0
+
+# ---- 图像处理 (Pillow / PIL) ----
+# python_helper.py 注入 PIL.Image; 图像类型转换/增强/滤波/压缩等
+# 涉及子模块: Image, ImageFilter, ImageEnhance, ImageOps, ImageChops
+Pillow>=10.0.0
+
+# ---- 数据可视化 ----
+# python_helper.py 设置 Agg 非交互后端; 直方图/频谱图/对比图绘制
+matplotlib>=3.7.0
+
+# ---- 科学计算与信号处理 ----
+# scipy.ndimage (中值滤波/Sobel/形态学), scipy.fftpack (DCT/IDCT)
+scipy>=1.11.0
+
+# ---- 高级图像处理 (scikit-image) ----
+# 骨架化 skeletonize、区域标注、形态学处理等实验模板
+scikit-image>=0.21.0
