@@ -38,17 +38,9 @@ function resolveView(globalName, label) {
     },
   };
 
-  // Forward beforeRouteLeave from the underlying component to the wrapper.
-  // This is needed because the router only inspects the route component
-  // (the wrapper), not the inner component rendered via Vue.h().
-  wrapper.beforeRouteLeave = function(to, from, next) {
-    var Comp = window[globalName];
-    if (Comp && typeof Comp.beforeRouteLeave === 'function') {
-      Comp.beforeRouteLeave.call(this, to, from, next);
-    } else {
-      next();
-    }
-  };
+  // NOTE: Do NOT add beforeRouteLeave to the wrapper — it causes
+  // unintended navigation issues with Vue Router 4 CDN build.
+  // Exam protection is handled by the global beforeEach guard below.
 
   return wrapper;
 }
@@ -297,18 +289,16 @@ const router = VueRouter.createRouter({
 // ------------------------------------------------------------------
 router.beforeEach(async (to, from, next) => {
   // ================================================================
-  //  EXAM PROTECTION — must run BEFORE any other guard logic.
-  //  Blocks all navigation away from exam routes when an exam is active.
+  //  EXAM PROTECTION — prevent accidental navigation away from exam.
+  //  Only fires when actually leaving an exam route with an active exam.
   // ================================================================
-  if (from.matched.some(function(r) { return r.name === 'ExamTake'; }) && store.examInProgress) {
-    // Allow navigation only if the exam is actually finished or errored
-    var examComp = window.ExamTake;
-    var canLeave = !examComp || (examComp._examDone === true);
-    if (!canLeave) {
-      var ok = window.confirm('考试进行中，离开将丢失未保存的答案！确定要离开吗？');
-      if (!ok) return next(false);
+  if (store.examInProgress && from.name === 'ExamTake' && to.name !== 'ExamTake') {
+    var done = window.ExamTake && window.ExamTake._examDone;
+    if (!done) {
+      if (!window.confirm('考试进行中，离开将丢失未保存的答案！确定要离开吗？')) {
+        return next(false);
+      }
     }
-    // User confirmed leaving — clear exam flag
     store.examInProgress = false;
   }
 

@@ -425,6 +425,7 @@ var ExamTake = {
     },
   },
   mounted() {
+    console.log('[ExamTake] mounted, examId=', this.examId);
     this.loadExam();
     // Prevent accidental browser close/refresh during exam
     var self = this;
@@ -438,6 +439,10 @@ var ExamTake = {
     window.addEventListener('beforeunload', this._beforeUnloadHandler);
   },
   beforeUnmount() {
+    console.log('[ExamTake] beforeUnmount fired, examDone=', ExamTake._examDone, 'timer=', !!this.timer);
+    if (this.timer && !ExamTake._examDone) {
+      console.warn('[ExamTake] WARNING: component unmounting while exam is still active!');
+    }
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
