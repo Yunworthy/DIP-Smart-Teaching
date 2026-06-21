@@ -287,6 +287,16 @@ var ExamTake = {
         const elapsed = (Date.now() - startedAt.getTime()) / 1000;
         this.remainingSeconds = Math.max(0, (this.exam.duration_minutes * 60) - Math.floor(elapsed));
         this.timerEndTime = Date.now() + this.remainingSeconds * 1000;
+
+        // Check if exam time has already expired
+        if (this.remainingSeconds <= 0) {
+          this.loading = false;
+          this.loadError = '考试时间已到期（' + this.exam.duration_minutes + '分钟），无法继续作答。请联系教师。';
+          ExamTake._examDone = true;
+          if (window.store) store.examInProgress = false;
+          return;
+        }
+
         // Activate exam protection — prevents logout redirect and navigation away
         if (window.store) store.examInProgress = true;
         ExamTake._examDone = false;
