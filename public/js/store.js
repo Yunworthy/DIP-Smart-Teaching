@@ -32,6 +32,11 @@ var store = reactive({
   welcomeRole: '',
   welcomeFading: false,
 
+  // ---- Exam protection flag ----
+  // When true, store.logout() will NOT redirect away from the current page.
+  // Set by ExamTake component during active exams.
+  examInProgress: false,
+
   /**
    * Show a welcome splash screen, auto-dismiss after delay
    * @param {'student'|'teacher'|'admin'} role
@@ -86,6 +91,8 @@ var store = reactive({
     this.user = null;
     this.isLoggedIn = false;
     localStorage.removeItem('dip-token');
+    // Do NOT redirect during active exam — the exam page handles its own navigation
+    if (this.examInProgress) return;
     // If router is available, navigate to portal (bypass) or login
     if (window.router) {
       var target = AUTH_BYPASS ? '/' : '/login';

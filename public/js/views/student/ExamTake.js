@@ -1,5 +1,6 @@
 var ExamTake = {
   name: 'ExamTake',
+  _examDone: false,  // Static flag read by router guard — true = exam finished, safe to leave
   template: `
     <div class="min-h-screen bg-gray-100">
       <!-- Top bar -->
@@ -229,6 +230,7 @@ var ExamTake = {
       remainingSeconds: 0,
       timerEndTime: 0,
       timer: null,
+      autoSaveTimer: null,
       showConfirmDialog: false,
       showResult: false,
       resultData: null,
@@ -285,11 +287,18 @@ var ExamTake = {
         const elapsed = (Date.now() - startedAt.getTime()) / 1000;
         this.remainingSeconds = Math.max(0, (this.exam.duration_minutes * 60) - Math.floor(elapsed));
         this.timerEndTime = Date.now() + this.remainingSeconds * 1000;
-        // Start timer
+        // Activate exam protection — prevents logout redirect and navigation away
+        if (window.store) store.examInProgress = true;
+        ExamTake._examDone = false;
+        // Start timer and auto-save
         this.startTimer();
+        this.startAutoSave();
       } catch (e) {
         console.error('Load exam error:', e);
         this.loadError = e.message || '加载考试失败，请稍后重试';
+        // Allow navigation away on load error
+        ExamTake._examDone = true;
+        if (window.store) store.examInProgress = false;
       }
       this.loading = false;
     },
@@ -305,6 +314,15 @@ var ExamTake = {
           self.autoSubmit();
         }
       }, 1000);
+    },
+    startAutoSave() {
+      if (this.autoSaveTimer) clearInterval(this.autoSaveTimer);
+      var self = this;
+      this.autoSaveTimer = setInterval(function() {
+        if (self.timer && Object.keys(self.answers).length > 0) {
+          self.saveProgress();
+        }
+      }, 30000); // Auto-save every 30 seconds
     },
     isAnswered(qId) {
       const v = this.answers[qId];
@@ -368,9 +386,13 @@ var ExamTake = {
         this.resultData = result;
         this.showResult = true;
         if (this.timer) { clearInterval(this.timer); this.timer = null; }
+        if (this.autoSaveTimer) { clearInterval(this.autoSaveTimer); this.autoSaveTimer = null; }
+        // Clear exam protection — exam is finished, user can navigate away
+        if (window.store) store.examInProgress = false;
+        ExamTake._examDone = true;
       } catch (e) {
         console.error('Submit exam error:', e);
-        this.submitError = '提交失败，请检查网络后重试';
+        this.submitError = '提交失败: ' + (e.message || '请检查网络后重试');
       }
     },
     async autoSubmit() {
@@ -378,6 +400,10 @@ var ExamTake = {
         const result = await api.request('POST', '/api/exam/exams/' + this.examId + '/submit', { answers: this.answers });
         this.resultData = result;
         this.showResult = true;
+        if (this.autoSaveTimer) { clearInterval(this.autoSaveTimer); this.autoSaveTimer = null; }
+        // Clear exam protection — exam is finished
+        if (window.store) store.examInProgress = false;
+        ExamTake._examDone = true;
         if (window.store && window.store.notify) window.store.notify('考试时间已到，已自动提交', 'warning');
       } catch (e) {
         console.error('Auto-submit error:', e);
@@ -406,18 +432,27 @@ var ExamTake = {
       clearInterval(this.timer);
       this.timer = null;
     }
+    if (this.autoSaveTimer) {
+      clearInterval(this.autoSaveTimer);
+      this.autoSaveTimer = null;
+    }
     if (this._beforeUnloadHandler) {
       window.removeEventListener('beforeunload', this._beforeUnloadHandler);
     }
+    // Clear exam protection on component destroy
+    if (window.store) store.examInProgress = false;
+    ExamTake._examDone = true;
   },
   beforeRouteLeave(to, from, next) {
-    // Allow navigation if exam is submitted or loaded with error
-    if (this.showResult || this.loadError || !this.timer) {
+    // Allow navigation if exam is submitted, errored, or not started
+    if (ExamTake._examDone) {
       return next();
     }
     // Warn user about unsaved progress
     var msg = '考试进行中，离开当前页面将丢失未保存的答题进度。确定要离开吗？';
     if (window.confirm(msg)) {
+      if (window.store) store.examInProgress = false;
+      ExamTake._examDone = true;
       next();
     } else {
       next(false);

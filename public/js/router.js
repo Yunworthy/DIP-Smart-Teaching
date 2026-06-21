@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 function resolveView(globalName, label) {
   // Return a getter so the component is resolved lazily at render time
-  return {
+  var wrapper = {
     name: globalName,
     render() {
       const Comp = window[globalName];
@@ -37,6 +37,20 @@ function resolveView(globalName, label) {
       ]);
     },
   };
+
+  // Forward beforeRouteLeave from the underlying component to the wrapper.
+  // This is needed because the router only inspects the route component
+  // (the wrapper), not the inner component rendered via Vue.h().
+  wrapper.beforeRouteLeave = function(to, from, next) {
+    var Comp = window[globalName];
+    if (Comp && typeof Comp.beforeRouteLeave === 'function') {
+      Comp.beforeRouteLeave.call(this, to, from, next);
+    } else {
+      next();
+    }
+  };
+
+  return wrapper;
 }
 
 // ------------------------------------------------------------------
@@ -282,6 +296,22 @@ const router = VueRouter.createRouter({
 //  Navigation guards
 // ------------------------------------------------------------------
 router.beforeEach(async (to, from, next) => {
+  // ================================================================
+  //  EXAM PROTECTION — must run BEFORE any other guard logic.
+  //  Blocks all navigation away from exam routes when an exam is active.
+  // ================================================================
+  if (from.matched.some(function(r) { return r.name === 'ExamTake'; }) && store.examInProgress) {
+    // Allow navigation only if the exam is actually finished or errored
+    var examComp = window.ExamTake;
+    var canLeave = !examComp || (examComp._examDone === true);
+    if (!canLeave) {
+      var ok = window.confirm('考试进行中，离开将丢失未保存的答案！确定要离开吗？');
+      if (!ok) return next(false);
+    }
+    // User confirmed leaving — clear exam flag
+    store.examInProgress = false;
+  }
+
   // ---- Bypass mode: auto-set mock user based on route ----
   if (AUTH_BYPASS) {
     // Portal page: no user needed

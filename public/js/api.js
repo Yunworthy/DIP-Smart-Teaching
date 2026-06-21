@@ -34,6 +34,10 @@ var api = {
           // In bypass mode, ignore 401 (backend should auto-authenticate)
           return {};
         }
+        if (store.examInProgress) {
+          // During exam, don't logout/redirect — just throw so the caller can handle
+          throw new Error('认证已过期，请在提交试卷后重新登录');
+        }
         store.logout();
         throw new Error('登录已过期，请重新登录');
       }
