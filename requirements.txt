@@ -1,33 +1,229 @@
 # =============================================================
-#  DIP Smart Teaching Platform — Python Dependencies
-#  数字图像处理智慧教学与虚拟仿真平台 — Python 依赖
+#  DIP Smart Teaching Platform — 完整依赖清单
+#  数字图像处理智慧教学与虚拟仿真平台
 # =============================================================
-#  安装命令:  pip install -r requirements.txt
-#  Python版本: >= 3.9
+#
+#  本文件包含平台运行所需的全部依赖，分为四部分：
+#    一、Python 包 (pip install)
+#    二、系统级依赖 (apt/Docker)
+#    三、Node.js 包 (npm install)
+#    四、环境变量
+#
+#  Python 版本要求: >= 3.9
+#  Node.js 版本要求: >= 18
+#  推荐操作系统: Windows 10/11 (本地开发), Debian 12 (Docker 部署)
+#
+# =============================================================
+#  快速安装 (Windows 本地开发)
+# =============================================================
+#
+#  1. Python 依赖:
+#     pip install -r requirements.txt
+#     国内加速: pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+#
+#  2. Node.js 依赖:
+#     cd platform && npm install
+#     国内加速: npm install --registry https://registry.npmmirror.com
+#
+#  3. 启动平台:
+#     cd platform && node server.js
+#
+# =============================================================
+#  快速部署 (Docker)
+# =============================================================
+#
+#     docker-compose up -d --build
+#
 # =============================================================
 
-# ---- 核心科学计算 ----
-# python_helper.py 自动注入; 所有实验模板的数组/矩阵/FFT运算
+
+# =============================================================
+#  一、Python 包依赖 (pip install)
+# =============================================================
+#
+#  这些包用于平台后端的代码沙盒执行服务 (code-runner.js)。
+#  学生提交的 Python 实验代码会在沙盒中自动注入 python_helper.py，
+#  然后与学生代码合并执行。
+#
+#  自动注入入口: platform/services/python_helper.py
+#  代码执行器:   platform/services/code-runner.js
+#
+
+# ----- 核心科学计算 -----
+# 导入方式: import numpy as np
+# 使用位置: python_helper.py (自动注入所有实验); 全部 74 个实验模板
+# 用途: 数组/矩阵运算、FFT、数据类型转换、像素级操作
 numpy>=1.24.0
 
-# ---- 计算机视觉 (OpenCV) ----
-# python_helper.py 注入 cv2; 灰度化/滤波/边缘检测/形态学/阈值/仿射等
-# 服务端运行选 headless 版(无GUI), 本地开发可换 opencv-python
+# ----- 计算机视觉 (OpenCV) -----
+# 导入方式: import cv2
+# 使用位置: python_helper.py (自动注入); 全部实验模板
+# 用途: 图像读写、灰度化、滤波(高斯/中值/双边)、边缘检测(Canny/Sobel)、
+#       形态学操作(腐蚀/膨胀/开闭)、阈值分割、仿射变换、直方图均衡、
+#       霍夫变换、轮廓检测、色彩空间转换
+# 说明: headless 版本不含 GUI 组件，适合服务端运行
+#       本地开发如需 imshow 等 GUI 功能，可替换为 opencv-python
 opencv-python-headless>=4.8.0
 
-# ---- 图像处理 (Pillow / PIL) ----
-# python_helper.py 注入 PIL.Image; 图像类型转换/增强/滤波/压缩等
-# 涉及子模块: Image, ImageFilter, ImageEnhance, ImageOps, ImageChops
+# ----- 图像处理 (Pillow / PIL) -----
+# 导入方式: from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageChops
+# 使用位置: python_helper.py (自动注入); ExperimentLab 实验模板; case-compression 实验
+# 用途: 图像类型转换 (ndarray <-> PIL Image)、图像增强、滤波、压缩模拟、
+#       JPEG 编码、位平面操作、图像合并与通道操作
 Pillow>=10.0.0
 
-# ---- 数据可视化 ----
-# python_helper.py 设置 Agg 非交互后端; 直方图/频谱图/对比图绘制
+# ----- 数据可视化 -----
+# 导入方式: import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
+# 使用位置: python_helper.py (自动注入，设置 Agg 非交互后端); 大部分实验模板
+# 用途: 直方图绘制、频谱图、对比图、多子图排列、结果保存为 PNG
+# 环境变量: MPLBACKEND=Agg (必须设置，否则在无显示器环境下报错)
 matplotlib>=3.7.0
 
-# ---- 科学计算与信号处理 ----
-# scipy.ndimage (中值滤波/Sobel/形态学), scipy.fftpack (DCT/IDCT)
+# ----- 科学计算与信号处理 -----
+# 导入方式: from scipy import ndimage; from scipy.fftpack import dct, idct
+# 使用位置: ExperimentLab 实验 2 (中值滤波/Sobel), 实验 3 (DCT/IDCT),
+#          实验 4 (形态学), 实验 5 (边缘检测)
+# 用途: ndimage 模块 — 中值滤波、Sobel 边缘检测、形态学操作、卷积
+#       fftpack 模块 — 离散余弦变换 (DCT) 及其逆变换 (IDCT)
 scipy>=1.11.0
 
-# ---- 高级图像处理 (scikit-image) ----
-# 骨架化 skeletonize、区域标注、形态学处理等实验模板
+# ----- 高级图像处理 (scikit-image) -----
+# 导入方式: from skimage.morphology import skeletonize
+# 使用位置: code-templates.js 中的 skeleton 实验模板 (骨架化/Zhang-Suen 算法)
+# 用途: 骨架化提取、区域标注、高级形态学处理
 scikit-image>=0.21.0
+
+# ----- PPT 文本提取工具 (辅助脚本，非平台运行时依赖) -----
+# 导入方式: import olefile
+# 使用位置: read_ppt.py, read_ppt2.py, extract_all_ppts.py
+# 用途: 读取旧版 .ppt 格式 (OLE2 复合文档) 中的文本内容
+# 说明: 这三个脚本是独立的数据提取工具，不参与平台运行
+#       如不需要提取 PPT 可不安装
+olefile>=0.46
+
+
+# =============================================================
+#  二、系统级依赖 (apt 包 / Docker 环境)
+# =============================================================
+#
+#  以下依赖通过 apt-get 安装 (Docker 基础镜像: node:18-bookworm)。
+#  Windows 本地开发时大部分不需要安装。
+#
+#  ---- Python 运行时 ----
+#  python3          — Python 3 解释器 (代码沙盒执行引擎)
+#  python3-pip      — pip 包管理器
+#  python3-venv     — 虚拟环境支持
+#
+#  ---- GNU Octave (MATLAB 兼容引擎) ----
+#  octave           — Octave 主程序 (提供 octave-cli 命令行执行)
+#  octave-image     — Octave 图像处理工具箱
+#  octave-io        — Octave I/O 包 (Excel/CSV 读写)
+#  说明: Octave 用于执行 MATLAB 风格的实验代码 (code-runner.js 中调用)
+#        环境变量 OCTAVE_PATH=/usr/bin/octave-cli
+#
+#  ---- OpenCV 运行时库 ----
+#  libgl1           — OpenGL 渲染库 (cv2 初始化必需)
+#  libglib2.0-0     — GLib 运行时 (cv2 内部依赖)
+#  libsm6           — X11 Session Management (cv2 headless 依赖)
+#  libxext6         — X11 扩展库
+#  libxrender1      — X11 渲染库
+#  说明: 缺少以上任何一个库，import cv2 都会报 libGL/libglib 找不到错误
+#
+#  ---- 字体 ----
+#  fonts-wqy-zenhei — 文泉驿正黑字体
+#  说明: matplotlib 绘制含中文标题的图表时必需，否则中文显示为方块
+#
+#  ---- Docker 安装命令 (已集成在 Dockerfile 中) ----
+#  apt-get update && apt-get install -y --no-install-recommends \
+#      python3 python3-pip python3-venv \
+#      octave octave-image octave-io \
+#      libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
+#      fonts-wqy-zenhei \
+#      && rm -rf /var/lib/apt/lists/*
+#
+#  ---- Windows 本地开发说明 ----
+#  - Python: 从 https://www.python.org 下载安装 Python 3.9+
+#  - Node.js: 从 https://nodejs.org 下载安装 Node.js 18+
+#  - Octave: 从 https://octave.org/download 下载安装 (可选，仅运行 Octave 实验时需要)
+#  - 中文字体: Windows 自带微软雅黑，matplotlib 可自动识别
+#  - OpenCV 系统库: Windows 版 pip 包已自带 DLL，无需额外安装
+
+
+# =============================================================
+#  三、Node.js 包依赖 (npm install)
+# =============================================================
+#
+#  安装位置: platform/package.json
+#  安装命令: cd platform && npm install
+#
+#  ---- 生产依赖 (dependencies) ----
+#
+#  express (^4.18.2)
+#    Web 框架，提供 HTTP 服务器和路由
+#
+#  cors (^2.8.5)
+#    Express 中间件，处理跨域请求
+#
+#  sql.js (^1.10.3)
+#    SQLite 的 WebAssembly 移植，替代 better-sqlite3
+#    数据库文件: platform/database/platform.db
+#    封装层: platform/database/db.js
+#    说明: Windows 无 VS C++ 编译工具时 better-sqlite3 安装会失败，故选用 sql.js
+#
+#  bcryptjs (^2.4.3)
+#    密码哈希 (纯 JS 实现，无需编译)
+#
+#  jsonwebtoken (^9.0.2)
+#    JWT 令牌签发与验证 (用户认证)
+#
+#  multer (^2.0.0)
+#    Express 文件上传中间件
+#    上传目录: platform/uploads/
+#
+#  xlsx (^0.18.5)
+#    Excel 文件读写 (成绩导出等功能)
+#
+#  cloudflared (^0.7.1)
+#    Cloudflare Tunnel 客户端 (可选，用于内网穿透/公网暴露)
+#    说明: 项目已改用樱花穿透 (natfrp.com) 做内网穿透，此包可能不再需要
+#
+#  ---- 开发依赖 (devDependencies) ----
+#
+#  localtunnel (^2.0.2)
+#    本地隧道工具 (开发调试用)
+#    说明: 已改用樱花穿透，此包可能不再需要
+
+
+# =============================================================
+#  四、环境变量
+# =============================================================
+#
+#  NODE_ENV=production       — Node.js 运行模式
+#  PORT=3000                 — HTTP 服务器监听端口
+#  PYTHON_PATH=/usr/bin/python3  — Python 解释器路径 (code-runner.js 调用)
+#  OCTAVE_PATH=/usr/bin/octave-cli — Octave 解释器路径 (code-runner.js 调用)
+#  MPLBACKEND=Agg            — Matplotlib 非交互后端 (必须设置)
+#
+#  ---- 可选环境变量 ----
+#  AUTH_BYPASS=false         — 设为 true 可临时关闭登录验证 (调试用)
+#  INPUT_IMAGE=input.png     — 代码沙盒默认输入图像文件名
+#  WORK_DIR=.                — 代码沙盒工作目录
+
+
+# =============================================================
+#  五、前端 CDN 依赖 (通过 <script> 标签加载)
+# =============================================================
+#
+#  以下库通过 CDN 或本地 vendor 文件在 index.html 中加载:
+#
+#  Vue 3        — unpkg.com/vue@3/dist/vue.global.prod.js (全局构建)
+#  Vue Router 4 — unpkg.com/vue-router@4/dist/vue-router.global.prod.js
+#  Tailwind CSS — cdn.tailwindcss.com (运行时编译)
+#  ECharts      — cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js
+#
+#  ---- 已本地化的 CDN 资源 ----
+#  CodeMirror 5 — public/vendor/codemirror/ (因 cdnjs.cloudflare.com 国内被墙)
+#
+#  ---- 注意 ----
+#  国内网络环境下 unpkg.com / cdn.jsdelivr.net / cdn.tailwindcss.com 可能
+#  访问缓慢或不稳定。如遇加载失败，需将对应资源下载到 public/vendor/ 目录本地加载。
