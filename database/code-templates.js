@@ -957,7 +957,7 @@ img = imread_gray().astype(np.float64)
 
 # 第2步: 定义运动模糊核生成函数
 def make_motion_kernel(length, angle):
-    \\"\\"\\"创建运动模糊核: length=模糊长度(像素), angle=模糊角度(度)\\"\\"\\"
+    \"\"\"创建运动模糊核: length=模糊长度(像素), angle=模糊角度(度)\"\"\"
     k = np.zeros((length, length))
     # → 创建 length×length 的全零矩阵
     k[length//2, :] = 1.0 / length
@@ -994,7 +994,7 @@ img = imread_gray().astype(np.float64)
 
 # 第2步: 定义圆盘形离焦核生成函数
 def make_disk_kernel(radius):
-    \\"\\"\\"创建圆盘形离焦核: radius=圆盘半径(像素)\\"\\"\\"
+    \"\"\"创建圆盘形离焦核: radius=圆盘半径(像素)\"\"\"
     size = 2 * radius + 1
     # → 核的尺寸为直径+1，确保有中心像素
     kernel = np.zeros((size, size))
@@ -1562,7 +1562,7 @@ gray_q = np.clip(gray_q, 0, levels - 1)
 
 # 第2步: 定义GLCM计算函数
 def calc_glcm(img, d=1, angle=0):
-    \\"\\"\\"计算GLCM: d=像素间距, angle=方向角度(弧度)\\"\\"\\"
+    \"\"\"计算GLCM: d=像素间距, angle=方向角度(弧度)\"\"\"
     h, w = img.shape
     glcm = np.zeros((levels, levels), dtype=np.float64)
     # → glcm[i,j] = 灰度对(i,j)出现的次数
@@ -1669,7 +1669,7 @@ for i in range(1, num_labels):
     mask = (labels == i).astype(np.uint8) * 255
     # → 创建只包含当前区域的二值掩膜
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    perimeter = cv2.arcLength(contours[0]) if contours else 1
+    perimeter = cv2.arcLength(contours[0], True) if contours else 1
     # → 周长 = 轮廓长度
     circularity = 4 * np.pi * area / (perimeter**2 + 1e-10)
     # → 圆度: 完美圆=1.0，长条<<1.0
@@ -1763,7 +1763,7 @@ img = imread_color()
 
 # 第2步: 定义处理流水线函数
 def process_pipeline(image):
-    \\"\\"\\"标准处理流程：灰度化→去噪→增强→分割\\"\\"\\"
+    \"\"\"标准处理流程：灰度化→去噪→增强→分割\"\"\"
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # → 转为灰度图
     denoised = cv2.GaussianBlur(gray, (5,5), 1.0)
@@ -2008,7 +2008,7 @@ if contours:
     # 第4步: 计算基本形状描述子
     area = cv2.contourArea(cnt)
     # → 轮廓围成的面积
-    perimeter = cv2.arcLength(cnt)
+    perimeter = cv2.arcLength(cnt, True)
     # → 轮廓周长
     circularity = 4 * np.pi * area / (perimeter**2 + 1e-10)
     # → 圆度: 完美圆=1.0

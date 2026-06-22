@@ -57,6 +57,18 @@ _BUILTIN_SKIP = {
     '__spec__', '__builtins__', '__file__', '__cached__',
 }
 
+def _is_skip_type(val):
+    """Check if a value's type should be excluded from state persistence."""
+    import types
+    if isinstance(val, types.ModuleType):
+        return True
+    # Skip matplotlib objects (Figure, Axes, etc. cannot be reliably pickled/restored)
+    tname = type(val).__name__
+    tmod = type(val).__module__ or ''
+    if 'matplotlib' in tmod:
+        return True
+    return False
+
 def save_state(exclude_names):
     """Serialize user-defined variables to a pickle file."""
     state = {}
@@ -65,6 +77,8 @@ def save_state(exclude_names):
             continue
         if callable(val) and not isinstance(val, type):
             continue  # skip functions (helper-defined ones are in exclude_names)
+        if _is_skip_type(val):
+            continue
         try:
             data = pickle.dumps(val, protocol=pickle.HIGHEST_PROTOCOL)
             if len(data) < 50 * 1024 * 1024:  # skip vars > 50 MB
@@ -95,6 +109,9 @@ def summarize_var(value):
     try:
         import numpy as np
         if isinstance(value, np.ndarray):
+            if value.dtype == object:
+                return 'ndarray | shape={} dtype=object ({})'.format(
+                    value.shape, type(value.flat[0]).__name__ if value.size > 0 else 'empty')
             mn, mx = value.min(), value.max()
             return 'ndarray | shape={} dtype={} range=[{},{}]'.format(
                 value.shape, value.dtype, mn, mx)
@@ -211,6 +228,8 @@ def run_all(student_code, helper_code):
             if name.startswith('_') or name in helper_names or name in _BUILTIN_SKIP:
                 continue
             if callable(val) and not isinstance(val, type):
+                continue
+            if _is_skip_type(val):
                 continue
             result['variables'][name] = summarize_var(val)
 
