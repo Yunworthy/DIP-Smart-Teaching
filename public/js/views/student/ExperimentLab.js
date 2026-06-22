@@ -469,18 +469,22 @@ var ExperimentLab = {
                 <!-- Right: Output -->
                 <div class="lg:w-1/2 p-4">
                   <!-- Step Images -->
-                  <div v-if="currentStepData.images && currentStepData.images.length > 0" class="mb-3">
-                    <p class="text-[10px] font-medium text-gray-500 uppercase mb-2">此步输出图像</p>
+                  <div v-if="cumulativeImages.length > 0" class="mb-3">
+                    <p class="text-[10px] font-medium text-gray-500 uppercase mb-2">
+                      输出图像
+                      <span v-if="currentStepData.images && currentStepData.images.length > 0" class="text-blue-500">（当前步骤有新图像）</span>
+                    </p>
                     <div class="space-y-2">
-                      <div v-for="(img, idx) in currentStepData.images" :key="idx"
-                        class="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                      <div v-for="(img, idx) in cumulativeImages" :key="idx"
+                        class="rounded-lg overflow-hidden border bg-gray-50"
+                        :class="currentStepData.images && currentStepData.images.some(function(i){return i.name===img.name}) ? 'border-blue-300 ring-1 ring-blue-100' : 'border-gray-200'">
                         <img :src="img.data" :alt="img.name" class="w-full object-contain" style="max-height:300px"/>
                         <p class="text-[10px] text-gray-400 text-center py-1">{{ img.name }}</p>
                       </div>
                     </div>
                   </div>
                   <div v-else class="mb-3 flex items-center justify-center h-24 rounded-lg bg-gray-50 border border-dashed border-gray-200">
-                    <span class="text-xs text-gray-400">此步无图像输出</span>
+                    <span class="text-xs text-gray-400">截至此步尚无图像输出</span>
                   </div>
 
                   <!-- Step Console Output -->
@@ -701,6 +705,24 @@ var ExperimentLab = {
     currentStepData: function() {
       if (!this.stepResults.length) return null;
       return this.stepResults[this.currentStep] || null;
+    },
+    cumulativeImages: function() {
+      if (!this.stepResults.length) return [];
+      var seen = {};
+      var imgs = [];
+      for (var i = 0; i <= this.currentStep; i++) {
+        var step = this.stepResults[i];
+        if (step && step.images) {
+          for (var j = 0; j < step.images.length; j++) {
+            var img = step.images[j];
+            if (!seen[img.name]) {
+              seen[img.name] = true;
+              imgs.push(img);
+            }
+          }
+        }
+      }
+      return imgs;
     }
   },
 
