@@ -353,14 +353,22 @@ var ExperimentLab = {
             </div>
 
             <!-- Run Button Bar -->
-            <div class="flex items-center gap-3">
-              <button @click="runCode" :disabled="running"
+            <div class="flex items-center gap-3 flex-wrap">
+              <button @click="runCode" :disabled="running || stepMode"
                 class="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2">
                 <svg v-if="!running" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                 </svg>
                 <svg v-else class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                 {{ running ? '运行中...' : '运行代码' }}
+              </button>
+              <button @click="runStepMode" :disabled="running || stepRunning"
+                class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2">
+                <svg v-if="!stepRunning" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                </svg>
+                <svg v-else class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                {{ stepRunning ? '分析中...' : '分步执行' }}
               </button>
               <span v-if="runResult && runResult.executionTime" class="text-xs text-gray-400">耗时 {{ runResult.executionTime.toFixed(1) }}s</span>
               <span v-if="runResult && runResult.exitCode === 0" class="text-xs text-emerald-600 font-medium">✓ 成功</span>
@@ -397,6 +405,97 @@ var ExperimentLab = {
                 </div>
               </div>
             </div>
+
+            <!-- ==================== STEP EXECUTION PANEL ==================== -->
+            <div v-if="stepMode" class="rounded-xl bg-white shadow-sm border border-blue-200 overflow-hidden">
+              <!-- Step Navigation Bar -->
+              <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-semibold text-blue-800">分步执行模式</span>
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">步骤 {{ currentStep + 1 }} / {{ stepResults.length }}</span>
+                  <span v-if="stepTotalTime" class="text-[10px] text-blue-400">总耗时 {{ stepTotalTime.toFixed(1) }}s</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button @click="prevStep" :disabled="currentStep === 0"
+                    class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                    :class="currentStep === 0 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-blue-200 text-blue-700 hover:bg-blue-100'">
+                    ← 上一步
+                  </button>
+                  <!-- Step dots -->
+                  <div class="flex gap-1">
+                    <span v-for="(s, idx) in stepResults" :key="idx" @click="currentStep = idx"
+                      class="w-2.5 h-2.5 rounded-full cursor-pointer transition-colors"
+                      :class="idx === currentStep ? 'bg-blue-600' : (s.hasError ? 'bg-red-300 hover:bg-red-400' : 'bg-blue-200 hover:bg-blue-300')"></span>
+                  </div>
+                  <button @click="nextStep" :disabled="currentStep >= stepResults.length - 1"
+                    class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                    :class="currentStep >= stepResults.length - 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-blue-200 text-blue-700 hover:bg-blue-100'">
+                    下一步 →
+                  </button>
+                  <button @click="exitStepMode"
+                    class="ml-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors">
+                    退出
+                  </button>
+                </div>
+              </div>
+
+              <!-- Step Content: Two-column layout -->
+              <div v-if="currentStepData" class="flex flex-col lg:flex-row">
+                <!-- Left: Code Display -->
+                <div class="lg:w-1/2 border-r border-gray-100 p-4">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold" :class="currentStepData.hasError ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'">
+                      Step {{ currentStep + 1 }}
+                    </span>
+                    <span class="text-[10px] text-gray-400 font-medium">当前执行代码</span>
+                  </div>
+                  <div class="rounded-lg bg-gray-900 p-3 overflow-auto" style="max-height: 280px;">
+                    <pre class="text-xs font-mono leading-relaxed"><code v-html="highlightStepCode(currentStepData.code)"></code></pre>
+                  </div>
+
+                  <!-- Variable Changes -->
+                  <div v-if="currentStepData.variables && Object.keys(currentStepData.variables).length > 0" class="mt-3">
+                    <p class="text-[10px] font-medium text-indigo-600 uppercase mb-1.5">变量状态</p>
+                    <div class="space-y-1 max-h-40 overflow-auto">
+                      <div v-for="(summary, varName) in currentStepData.variables" :key="varName"
+                        class="flex items-start gap-2 text-[11px] py-1 px-2 rounded bg-gray-50">
+                        <span class="font-mono font-semibold text-indigo-700 flex-shrink-0">{{ varName }}</span>
+                        <span class="text-gray-500 break-all">{{ summary }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Output -->
+                <div class="lg:w-1/2 p-4">
+                  <!-- Step Images -->
+                  <div v-if="currentStepData.images && currentStepData.images.length > 0" class="mb-3">
+                    <p class="text-[10px] font-medium text-gray-500 uppercase mb-2">此步输出图像</p>
+                    <div class="space-y-2">
+                      <div v-for="(img, idx) in currentStepData.images" :key="idx"
+                        class="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                        <img :src="img.data" :alt="img.name" class="w-full object-contain" style="max-height:300px"/>
+                        <p class="text-[10px] text-gray-400 text-center py-1">{{ img.name }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="mb-3 flex items-center justify-center h-24 rounded-lg bg-gray-50 border border-dashed border-gray-200">
+                    <span class="text-xs text-gray-400">此步无图像输出</span>
+                  </div>
+
+                  <!-- Step Console Output -->
+                  <div>
+                    <p class="text-[10px] font-medium text-gray-500 uppercase mb-1.5">控制台输出</p>
+                    <div class="rounded-lg bg-gray-900 p-3 max-h-32 overflow-auto">
+                      <pre v-if="currentStepData.stdout" class="text-xs font-mono text-green-400 whitespace-pre-wrap">{{ currentStepData.stdout }}</pre>
+                      <pre v-if="currentStepData.stderr" class="text-xs font-mono text-red-400 whitespace-pre-wrap mt-1">{{ currentStepData.stderr }}</pre>
+                      <p v-if="!currentStepData.stdout && !currentStepData.stderr" class="text-xs text-gray-500">无输出</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- ==================== END STEP EXECUTION PANEL ==================== -->
 
             <!-- Submit Experiment -->
             <div class="flex justify-end">
@@ -453,6 +552,12 @@ var ExperimentLab = {
       // Execution
       running: false,
       runResult: null,
+      // Step execution mode
+      stepMode: false,
+      stepResults: [],
+      currentStep: 0,
+      stepRunning: false,
+      stepTotalTime: 0,
       // AI hints
       aiHints: null,
       // UI
@@ -592,6 +697,10 @@ var ExperimentLab = {
     },
     isCourseExp: function() {
       return this.currentKey && this.currentKey.indexOf('course-exp') === 0;
+    },
+    currentStepData: function() {
+      if (!this.stepResults.length) return null;
+      return this.stepResults[this.currentStep] || null;
     }
   },
 
@@ -680,6 +789,10 @@ var ExperimentLab = {
       this.runResult = null;
       this.sourceImageBase64 = '';
       this.sourceImageUrl = '';
+      this.stepMode = false;
+      this.stepResults = [];
+      this.currentStep = 0;
+      this.stepTotalTime = 0;
     },
 
     // ---- Language switching ----
@@ -806,6 +919,80 @@ var ExperimentLab = {
         self.running = false;
         self.runResult = { stdout: '', stderr: err.message, images: [], exitCode: -1, executionTime: 0 };
       });
+    },
+
+    // ---- Step execution mode ----
+    runStepMode: function() {
+      var self = this;
+      if (!this.sourceImageBase64) {
+        if (window.store) store.notify('请先上传或加载样例图像', 'error');
+        return;
+      }
+      var code = this.code;
+      if (!code.trim()) {
+        if (window.store) store.notify('请先编写代码', 'error');
+        return;
+      }
+
+      this.stepRunning = true;
+      this.stepMode = false;
+      this.stepResults = [];
+      this.currentStep = 0;
+      this.runResult = null;
+
+      api.runSteps({
+        code: code,
+        language: this.language,
+        imageData: this.sourceImageBase64,
+        simulationKey: this.currentKey
+      }).then(function(result) {
+        self.stepResults = result.steps || [];
+        self.stepTotalTime = result.totalTime || 0;
+        self.currentStep = 0;
+        self.stepMode = true;
+        self.stepRunning = false;
+        if (window.store) store.notify('分步执行完成，共 ' + self.stepResults.length + ' 步', 'success');
+      }).catch(function(err) {
+        self.stepRunning = false;
+        if (window.store) store.notify('分步执行失败: ' + err.message, 'error');
+      });
+    },
+
+    prevStep: function() {
+      if (this.currentStep > 0) this.currentStep--;
+    },
+
+    nextStep: function() {
+      if (this.currentStep < this.stepResults.length - 1) this.currentStep++;
+    },
+
+    exitStepMode: function() {
+      this.stepMode = false;
+      this.stepResults = [];
+      this.currentStep = 0;
+      this.stepTotalTime = 0;
+    },
+
+    highlightStepCode: function(code) {
+      if (!code) return '';
+      // Simple syntax highlighting for Python/Octave
+      var escaped = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      // Comments
+      escaped = escaped.replace(/(#.*)$/gm, '<span style="color:#6b7280">$1</span>');
+      escaped = escaped.replace(/(%.*?)$/gm, '<span style="color:#6b7280">$1</span>');
+      // Strings
+      escaped = escaped.replace(/('[^']*'|"[^"]*")/g, '<span style="color:#f59e0b">$1</span>');
+      // Keywords
+      var kw = /\b(import|from|as|def|class|return|if|elif|else|for|while|in|not|and|or|True|False|None|try|except|finally|with|lambda|yield|pass|break|continue|global|nonlocal|assert|del|raise|end|function|printf|fprintf|sprintf|disp|for|end|if|else|elseif)\b/g;
+      escaped = escaped.replace(kw, '<span style="color:#818cf8">$1</span>');
+      // Numbers
+      escaped = escaped.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#34d399">$1</span>');
+      // Functions (word followed by parenthesis)
+      escaped = escaped.replace(/\b([a-zA-Z_]\w*)\s*\(/g, '<span style="color:#60a5fa">$1</span>(');
+      return escaped;
     },
 
     // ---- Submit experiment ----

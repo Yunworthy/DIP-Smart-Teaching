@@ -1,6 +1,6 @@
 const express = require('express');
 const authenticate = require('../middleware/auth');
-const { runCode } = require('../services/code-runner');
+const { runCode, runSteps } = require('../services/code-runner');
 
 const router = express.Router();
 
@@ -58,6 +58,32 @@ router.post('/run', authenticate, async (req, res) => {
     console.error('Code execution error:', err);
     console.error('Route error:', err.message);
     res.status(500).json({ error: '操作失败，请稍后重试' });
+  }
+});
+
+// POST /api/code/run-steps — Execute code step-by-step for educational walkthrough
+router.post('/run-steps', authenticate, async (req, res) => {
+  try {
+    const { code, language, imageData } = req.body;
+
+    // Validate inputs
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ error: '请提供代码内容' });
+    }
+    if (!language || !['python', 'octave'].includes(language)) {
+      return res.status(400).json({ error: '语言必须为 python 或 octave' });
+    }
+    if (code.length > 50 * 1024) {
+      return res.status(400).json({ error: '代码长度不能超过50KB' });
+    }
+
+    // Run code step-by-step
+    const result = await runSteps(code, language, imageData || '');
+
+    res.json(result);
+  } catch (err) {
+    console.error('Step execution error:', err);
+    res.status(500).json({ error: '分步执行失败: ' + err.message });
   }
 });
 

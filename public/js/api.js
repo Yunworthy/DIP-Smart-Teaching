@@ -114,6 +114,10 @@ var api = {
     return this.request('POST', '/api/code/run', data);
   },
 
+  runSteps(data) {
+    return this.request('POST', '/api/code/run-steps', data);
+  },
+
   getCodeSubmissions(simKey) {
     return this.request('GET', `/api/code/submissions/${simKey}`);
   },
