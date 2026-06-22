@@ -31,7 +31,8 @@ var AppSidebar = {
       <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         <template v-for="item in menuItems" :key="item.path">
           <a
-            :href="item.path"
+            href="#"
+            @click.prevent="navigateTo(item.path)"
             :class="[
               'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group relative',
               isActive(item.path)
@@ -181,7 +182,27 @@ var AppSidebar = {
   },
   methods: {
     isActive(path) {
+      // Use reactive $route for proper Vue re-rendering
+      if (this.$route) {
+        var currentHash = '#' + this.$route.path;
+        // Exact match or parent path match (e.g. '#/student/exams' matches '#/student/exams/1')
+        return currentHash === path || currentHash.startsWith(path + '/');
+      }
       return window.location.hash === path;
+    },
+    navigateTo(path) {
+      // Use Vue Router for navigation — ensures beforeEach guards (exam protection) fire properly
+      var routePath = path.replace(/^#/, '');
+      if (window.router) {
+        window.router.push(routePath).catch(function(err) {
+          // Ignore NavigationDuplicated errors
+          if (err && err.name !== 'NavigationDuplicated') {
+            console.error('Navigation error:', err);
+          }
+        });
+      } else {
+        window.location.hash = path;
+      }
     },
     closeSidebar() {
       this.store.sidebarOpen = false;
