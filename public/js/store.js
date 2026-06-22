@@ -20,10 +20,12 @@ var store = reactive({
 
   // ---- UI state ----
   sidebarOpen: (function() {
+    // Desktop: always open by default (text labels must be visible)
+    if (window.innerWidth >= 1024) return true;
+    // Mobile: check localStorage, default closed
     const stored = localStorage.getItem('dip-sidebar');
     if (stored !== null) return stored === 'true';
-    // Default: closed on mobile, open on desktop
-    return window.innerWidth >= 1024;
+    return false;
   })(),
   loading: false,
 
