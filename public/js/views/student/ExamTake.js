@@ -441,8 +441,9 @@ var ExamTake = {
   beforeUnmount() {
     console.log('[ExamTake] beforeUnmount fired, examDone=', ExamTake._examDone, 'timer=', !!this.timer);
     if (this.timer && !ExamTake._examDone) {
-      console.warn('[ExamTake] WARNING: component unmounting while exam is still active!');
+      console.warn('[ExamTake] WARNING: component unmounting while exam is still active! Timer cleanup only, protection preserved.');
     }
+    // Clean up timers
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
@@ -454,9 +455,8 @@ var ExamTake = {
     if (this._beforeUnloadHandler) {
       window.removeEventListener('beforeunload', this._beforeUnloadHandler);
     }
-    // Clear exam protection on component destroy
-    if (window.store) store.examInProgress = false;
-    ExamTake._examDone = true;
+    // DO NOT clear examInProgress here — protection is managed by router guard and explicit submit/error
+    // DO NOT set _examDone = true here — only submit/error should do that
   },
   beforeRouteLeave(to, from, next) {
     // Allow navigation if exam is submitted, errored, or not started

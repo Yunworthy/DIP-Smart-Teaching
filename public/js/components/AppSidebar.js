@@ -209,6 +209,14 @@ var AppSidebar = {
       localStorage.setItem('dip-sidebar', 'false');
     },
     handleLogout() {
+      if (this.store.examInProgress) {
+        if (!window.confirm('考试进行中，退出登录将丢失未提交的答题！确定要退出吗？')) {
+          return;
+        }
+        // User confirmed — clear exam state
+        if (window.ExamTake) window.ExamTake._examDone = true;
+        this.store.examInProgress = false;
+      }
       this.store.logout();
       window.location.hash = (typeof AUTH_BYPASS !== 'undefined' && AUTH_BYPASS) ? '#/' : '#/login';
     },

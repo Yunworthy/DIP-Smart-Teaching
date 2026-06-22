@@ -162,6 +162,14 @@ var AppHeader = {
     },
     handleLogout() {
       this.showUserMenu = false;
+      if (this.store.examInProgress) {
+        if (!window.confirm('考试进行中，退出登录将丢失未提交的答题！确定要退出吗？')) {
+          return;
+        }
+        // User confirmed — clear exam state
+        if (window.ExamTake) window.ExamTake._examDone = true;
+        this.store.examInProgress = false;
+      }
       this.store.logout();
       if (this.$router) {
         this.$router.push('/login').catch(() => {});

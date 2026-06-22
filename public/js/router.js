@@ -287,6 +287,33 @@ const router = VueRouter.createRouter({
 // ------------------------------------------------------------------
 //  Navigation guards
 // ------------------------------------------------------------------
+
+// BACKUP DEFENSE: intercept raw hash changes during active exam.
+// This catches navigation that bypasses Vue Router (e.g. direct hash assignment,
+// browser back button, or anchor clicks that slip through).
+(function () {
+  var _lastExamHash = null;
+  window.addEventListener('hashchange', function (e) {
+    if (store.examInProgress && !window.ExamTake?._examDone) {
+      var newHash = window.location.hash;
+      // If navigating away from exam route, revert
+      if (!newHash.includes('/exams/')) {
+        // Revert to last known exam hash
+        if (_lastExamHash) {
+          window.location.hash = _lastExamHash;
+        }
+        e.preventDefault();
+        return false;
+      }
+    }
+    // Track exam route hashes
+    var h = window.location.hash;
+    if (h.includes('/exams/')) {
+      _lastExamHash = h;
+    }
+  });
+})();
+
 router.beforeEach(async (to, from, next) => {
   // ================================================================
   //  EXAM PROTECTION — prevent accidental navigation away from exam.
