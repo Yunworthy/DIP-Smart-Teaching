@@ -69,6 +69,37 @@ def _is_skip_type(val):
         return True
     return False
 
+def _is_mpl_type(val):
+    """Check if a value is a matplotlib type (for in-memory tracking only).
+    Unlike _is_skip_type, this does NOT match generic modules like pickle/ast."""
+    tmod = type(val).__module__ or ''
+    if 'matplotlib' in tmod:
+        return True
+    return False
+
+def _extract_mpl_objects():
+    """Extract matplotlib objects from globals() into a dict (in-memory only, not pickled).
+    This preserves Figure/Axes references across steps without unreliable pickle serialization.
+    Also catches numpy ndarrays with dtype=object (e.g., axes arrays from plt.subplots)."""
+    import numpy as np
+    mpl = {}
+    for name in list(globals().keys()):
+        if name.startswith('_') or name in _BUILTIN_SKIP:
+            continue
+        val = globals()[name]
+        is_mpl = _is_mpl_type(val)
+        # Also catch numpy arrays containing matplotlib objects (e.g., axes from plt.subplots)
+        if not is_mpl and isinstance(val, np.ndarray) and val.dtype == object:
+            is_mpl = True
+        if is_mpl:
+            mpl[name] = val
+            del globals()[name]
+    return mpl
+
+def _restore_mpl_objects(mpl_dict):
+    """Restore matplotlib objects from in-memory dict back into globals()."""
+    globals().update(mpl_dict)
+
 def save_state(exclude_names):
     """Serialize user-defined variables to a pickle file."""
     state = {}
@@ -172,6 +203,9 @@ def run_all(student_code, helper_code):
     # Remember everything the helper defined — we won't persist these
     helper_names = set(globals().keys())
 
+    # In-memory store for matplotlib objects that can't be pickled
+    mpl_objects = {}
+
     results = []
     for idx, step in enumerate(steps):
         step_code = step['code']
@@ -195,6 +229,9 @@ def run_all(student_code, helper_code):
         # Load state from previous step
         prev_state = load_state()
         globals().update(prev_state)
+
+        # Restore matplotlib objects (fig, axes, etc.) from previous steps
+        _restore_mpl_objects(mpl_objects)
 
         # Snapshot images before execution
         images_before = _scan_images()
@@ -220,7 +257,11 @@ def run_all(student_code, helper_code):
         new_images = sorted(images_after - images_before)
         result['images'] = new_images
 
-        # Save state for next step
+        # Extract matplotlib objects from globals() into in-memory store
+        # Must happen BEFORE save_state so pickle doesn't try to serialize them
+        mpl_objects.update(_extract_mpl_objects())
+
+        # Save state for next step (non-matplotlib variables only)
         save_state(helper_names)
 
         # Variable summary — only user-created vars
