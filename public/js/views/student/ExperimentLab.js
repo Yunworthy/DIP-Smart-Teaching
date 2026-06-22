@@ -975,24 +975,44 @@ var ExperimentLab = {
 
     highlightStepCode: function(code) {
       if (!code) return '';
-      // Simple syntax highlighting for Python/Octave
-      var escaped = code
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      // Comments
-      escaped = escaped.replace(/(#.*)$/gm, '<span style="color:#6b7280">$1</span>');
-      escaped = escaped.replace(/(%.*?)$/gm, '<span style="color:#6b7280">$1</span>');
-      // Strings
-      escaped = escaped.replace(/('[^']*'|"[^"]*")/g, '<span style="color:#f59e0b">$1</span>');
-      // Keywords
-      var kw = /\b(import|from|as|def|class|return|if|elif|else|for|while|in|not|and|or|True|False|None|try|except|finally|with|lambda|yield|pass|break|continue|global|nonlocal|assert|del|raise|end|function|printf|fprintf|sprintf|disp|for|end|if|else|elseif)\b/g;
-      escaped = escaped.replace(kw, '<span style="color:#818cf8">$1</span>');
-      // Numbers
-      escaped = escaped.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#34d399">$1</span>');
-      // Functions (word followed by parenthesis)
-      escaped = escaped.replace(/\b([a-zA-Z_]\w*)\s*\(/g, '<span style="color:#60a5fa">$1</span>(');
-      return escaped;
+      var KW = /\b(import|from|as|def|class|return|if|elif|else|for|while|in|not|and|or|True|False|None|try|except|finally|with|lambda|yield|pass|break|continue|global|nonlocal|assert|del|raise|end|function|printf|fprintf|sprintf|disp|elseif)\b/g;
+
+      function highlightCode(s) {
+        // Escape HTML entities
+        s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // Strings (amber)
+        s = s.replace(/('[^']*'|"[^"]*")/g, '<span style="color:#f59e0b">$1</span>');
+        // Keywords (purple)
+        s = s.replace(KW, '<span style="color:#818cf8">$1</span>');
+        // Numbers (green)
+        s = s.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#34d399">$1</span>');
+        // Function names (blue)
+        s = s.replace(/\b([a-zA-Z_]\w*)\s*\(/g, '<span style="color:#60a5fa">$1</span>(');
+        return s;
+      }
+
+      return code.split('\n').map(function(line) {
+        // Find first comment character (# for Python, % for Octave)
+        var commentIdx = -1;
+        var inStr = false;
+        var strChar = '';
+        for (var i = 0; i < line.length; i++) {
+          var ch = line[i];
+          if (inStr) {
+            if (ch === strChar) inStr = false;
+            continue;
+          }
+          if (ch === "'" || ch === '"') { inStr = true; strChar = ch; continue; }
+          if (ch === '#' || ch === '%') { commentIdx = i; break; }
+        }
+        if (commentIdx >= 0) {
+          var codePart = highlightCode(line.substring(0, commentIdx));
+          var commentPart = line.substring(commentIdx)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return codePart + '<span style="color:#6b7280">' + commentPart + '</span>';
+        }
+        return highlightCode(line);
+      }).join('\n');
     },
 
     // ---- Submit experiment ----
