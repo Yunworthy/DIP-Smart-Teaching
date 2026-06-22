@@ -74,7 +74,7 @@ var CourseDetail = {
               <div class="flex items-start justify-between mb-2">
                 <h4 class="text-sm font-semibold text-gray-900 flex-1">{{ kp.title || kp.name }}</h4>
                 <span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                  :class="categoryClass(kp.category)">{{ kp.category || '基础' }}</span>
+                  :class="categoryClass(kp.category)">{{ categoryLabel(kp.category) }}</span>
               </div>
               <p class="text-xs text-gray-500 line-clamp-2 mb-3">{{ kp.description || '掌握图像处理的核心概念。' }}</p>
               <div class="flex items-center justify-between">
@@ -333,7 +333,7 @@ var CourseDetail = {
           this.progress = progRes.value.data || progRes.value || [];
         }
         this.resources = [
-          { name: '第' + (this.chapter.chapter_number || '') + '章 课件 PPT', url: '/resources/ch' + id + '.pptx', type: 'PowerPoint 演示文稿' },
+          { name: '第' + (this.chapter.sort_order || this.chapter.id || '') + '章 课件 PPT', url: '/resources/ch' + id + '.pptx', type: 'PowerPoint 演示文稿' },
           { name: '实验指导书', url: '/resources/ch' + id + '_guide.pdf', type: 'PDF 文档' },
           { name: '参考资料', url: '/resources/ch' + id + '_ref.pdf', type: 'PDF 文档' }
         ];
@@ -379,8 +379,16 @@ var CourseDetail = {
       }
     },
     categoryClass(cat) {
-      const map = { '基础': 'bg-blue-50 text-blue-700', '进阶': 'bg-amber-50 text-amber-700', '高级': 'bg-rose-50 text-rose-700' };
+      const map = {
+        '基础': 'bg-blue-50 text-blue-700', 'concept': 'bg-blue-50 text-blue-700',
+        '进阶': 'bg-amber-50 text-amber-700', 'algorithm': 'bg-amber-50 text-amber-700',
+        '高级': 'bg-rose-50 text-rose-700', 'application': 'bg-emerald-50 text-emerald-700'
+      };
       return map[cat] || 'bg-gray-50 text-gray-700';
+    },
+    categoryLabel(cat) {
+      const map = { 'concept': '基础', 'algorithm': '进阶', 'application': '应用' };
+      return map[cat] || cat || '基础';
     }
   }
 };

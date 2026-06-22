@@ -64,7 +64,8 @@ function migrate(db) {
   ];
 
   for (const [id, title, subtitle, desc] of chapterData) {
-    db.exec(`UPDATE chapters SET title='${esc(title)}', subtitle='${esc(subtitle)}', description='${esc(desc)}', sort_order=${id} WHERE id=${id}`);
+    db.prepare('UPDATE chapters SET title = ?, subtitle = ?, description = ?, sort_order = ? WHERE id = ?')
+      .run(title, subtitle, desc, id, id);
   }
 
   console.log('[migrate] Chapters updated to 12-chapter structure.');
