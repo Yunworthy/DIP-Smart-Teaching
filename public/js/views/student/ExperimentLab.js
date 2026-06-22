@@ -450,7 +450,7 @@ var ExperimentLab = {
                     <span class="text-[10px] text-gray-400 font-medium">当前执行代码</span>
                   </div>
                   <div class="rounded-lg bg-gray-900 p-3 overflow-auto" style="max-height: 280px;">
-                    <pre class="text-xs font-mono leading-relaxed"><code v-html="highlightStepCode(currentStepData.code)"></code></pre>
+                    <pre class="text-xs font-mono leading-relaxed text-gray-200"><code v-html="highlightStepCode(currentStepData.code)"></code></pre>
                   </div>
 
                   <!-- Variable Changes -->
@@ -1009,7 +1009,7 @@ var ExperimentLab = {
           var codePart = highlightCode(line.substring(0, commentIdx));
           var commentPart = line.substring(commentIdx)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          return codePart + '<span style="color:#6b7280">' + commentPart + '</span>';
+          return codePart + '<span style="color:#9ca3af">' + commentPart + '</span>';
         }
         return highlightCode(line);
       }).join('\n');
