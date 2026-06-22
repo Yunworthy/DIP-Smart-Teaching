@@ -47,7 +47,7 @@ var KnowledgeMap = {
       </div>
 
       <!-- Graph + Side Panel -->
-      <div class="flex gap-4" style="min-height: 600px">
+      <div class="flex flex-col lg:flex-row gap-4" style="min-height: 600px">
         <!-- Graph Area -->
         <div class="flex-1 min-w-0 relative">
           <div v-if="graphLoading" class="absolute inset-0 flex items-center justify-center bg-white/80 rounded-xl z-10">
@@ -67,7 +67,7 @@ var KnowledgeMap = {
 
         <!-- Right Panel (when node selected) -->
         <transition name="slide">
-          <div v-if="selectedNode" class="w-80 flex-shrink-0 rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
+          <div v-if="selectedNode" class="w-full lg:w-80 lg:flex-shrink-0 rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
             <div class="p-5 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50">
               <div class="flex items-start justify-between">
                 <div>

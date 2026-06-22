@@ -85,4 +85,25 @@ router.get('/:key', (req, res) => {
   }
 });
 
+// PUT /:id — update simulation
+router.put('/:id', (req, res) => {
+  try {
+    const { title, description, parameters, sample_image, sampleImage, case_text, caseText } = req.body;
+    const sim = req.db.prepare('SELECT * FROM simulations WHERE id = ?').get(parseInt(req.params.id));
+    if (!sim) return res.status(404).json({ error: '仿真实验不存在' });
+
+    const paramStr = typeof parameters === 'string' ? parameters : JSON.stringify(parameters || []);
+    const img = sample_image || sampleImage || sim.sample_image || '';
+    const ct = case_text || caseText || sim.case_text || '';
+
+    req.db.prepare('UPDATE simulations SET title = ?, description = ?, parameters = ?, sample_image = ?, case_text = ? WHERE id = ?')
+      .run(title || sim.title, description || '', paramStr, img, ct, parseInt(req.params.id));
+    req.db.save();
+    res.json({ message: '实验已更新' });
+  } catch (err) {
+    console.error('更新实验失败:', err.message);
+    res.status(500).json({ error: '更新实验失败' });
+  }
+});
+
 module.exports = router;

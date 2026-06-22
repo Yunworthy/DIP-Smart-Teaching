@@ -222,11 +222,12 @@ var CourseManage = {
     },
     async saveDescription() {
       try {
+        await api.updateChapter(this.selectedChapter.id, { description: this.draftDescription });
         this.chapterDetail.description = this.draftDescription;
         this.editingDescription = false;
         this.showToast('描述已保存', 'success');
       } catch (err) {
-        this.showToast('保存失败', 'error');
+        this.showToast('保存失败: ' + (err.message || ''), 'error');
       }
     },
     editKp(kp) {
@@ -235,25 +236,37 @@ var CourseManage = {
     },
     async saveKp() {
       if (!this.kpForm.title) return;
-      const kps = this.chapterDetail.knowledgePoints || [];
-      if (this.kpForm.id) {
-        const idx = kps.findIndex(k => k.id === this.kpForm.id);
-        if (idx >= 0) {
-          kps[idx] = { ...kps[idx], title: this.kpForm.title, description: this.kpForm.description };
+      try {
+        if (this.kpForm.id) {
+          // Update existing
+          await api.updateKnowledgePoint(this.kpForm.id, { title: this.kpForm.title, description: this.kpForm.description });
+          const kps = this.chapterDetail.knowledgePoints || [];
+          const idx = kps.findIndex(k => k.id === this.kpForm.id);
+          if (idx >= 0) kps[idx] = { ...kps[idx], title: this.kpForm.title, description: this.kpForm.description };
+          this.chapterDetail.knowledgePoints = [...kps];
+        } else {
+          // Add new
+          const result = await api.addKnowledgePoint(this.selectedChapter.id, { title: this.kpForm.title, description: this.kpForm.description });
+          const newKp = result.id ? result : { id: result.id || Date.now(), title: this.kpForm.title, description: this.kpForm.description };
+          this.chapterDetail.knowledgePoints = [...(this.chapterDetail.knowledgePoints || []), newKp];
         }
-      } else {
-        kps.push({ id: Date.now(), title: this.kpForm.title, description: this.kpForm.description });
+        this.showKpModal = false;
+        this.showToast('知识点已保存', 'success');
+      } catch (err) {
+        this.showToast('保存失败: ' + (err.message || ''), 'error');
       }
-      this.chapterDetail.knowledgePoints = [...kps];
-      this.showKpModal = false;
-      this.showToast('知识点已保存', 'success');
     },
-    deleteKp(kp, idx) {
+    async deleteKp(kp, idx) {
       if (!confirm('确定删除该知识点？')) return;
-      const kps = [...(this.chapterDetail.knowledgePoints || [])];
-      kps.splice(idx, 1);
-      this.chapterDetail.knowledgePoints = kps;
-      this.showToast('知识点已删除', 'success');
+      try {
+        await api.deleteKnowledgePoint(kp.id);
+        const kps = [...(this.chapterDetail.knowledgePoints || [])];
+        kps.splice(idx, 1);
+        this.chapterDetail.knowledgePoints = kps;
+        this.showToast('知识点已删除', 'success');
+      } catch (err) {
+        this.showToast('删除失败: ' + (err.message || ''), 'error');
+      }
     },
     showToast(message, type = 'success') {
       this.toast = { message, type };

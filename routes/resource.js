@@ -177,7 +177,7 @@ router.delete('/:id', authenticate, requireRole('teacher', 'admin'), (req, res) 
 });
 
 // GET /:id/download — increment download_count and serve file
-router.get('/:id/download', (req, res) => {
+router.get('/:id/download', authenticate, (req, res) => {
   try {
     const { id } = req.params;
     const resource = req.db.prepare('SELECT * FROM resources WHERE id = ?').get(parseInt(id));

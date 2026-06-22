@@ -54,7 +54,7 @@ var CourseDetail = {
         <div class="flex-1 min-w-0">
           <!-- Tabs -->
           <div class="border-b border-gray-200 mb-6">
-            <nav class="flex gap-8">
+            <nav class="flex gap-4 sm:gap-8 overflow-x-auto">
               <button v-for="tab in tabs" :key="tab.key"
                 @click="activeTab = tab.key"
                 class="py-3 text-sm font-medium border-b-2 transition-colors"

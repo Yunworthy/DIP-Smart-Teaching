@@ -200,6 +200,10 @@ var AppSidebar = {
             console.error('Navigation error:', err);
           }
         });
+        // Auto-close sidebar on mobile after navigation
+        if (window.innerWidth < 1024) {
+          this.store.sidebarOpen = false;
+        }
       } else {
         window.location.hash = path;
       }

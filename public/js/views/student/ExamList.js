@@ -16,6 +16,7 @@ var ExamList = {
       <div v-if="!loading && attempts.length > 0" class="mb-8">
         <h2 class="text-lg font-semibold text-gray-700 mb-4">我的考试记录</h2>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
@@ -54,6 +55,7 @@ var ExamList = {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ var ExamTake = {
     <div class="min-h-screen bg-gray-100">
       <!-- Top bar -->
       <div class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div class="flex items-center justify-between px-6 py-3">
+        <div class="flex flex-wrap items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
           <div class="flex items-center gap-4">
             <h1 class="text-lg font-bold text-gray-800">{{ exam.title || '考试中' }}</h1>
             <span class="text-sm text-gray-500">共 {{ questions.length }} 题</span>
@@ -56,9 +56,9 @@ var ExamTake = {
       </div>
 
       <!-- Exam content -->
-      <div v-else class="pt-20 pb-8 px-6 flex gap-6 max-w-[1400px] mx-auto">
+      <div v-else class="pt-16 sm:pt-20 pb-6 sm:pb-8 px-3 sm:px-6 flex flex-col lg:flex-row gap-4 lg:gap-6 max-w-[1400px] mx-auto">
         <!-- Question navigation panel -->
-        <div class="w-56 flex-shrink-0">
+        <div class="w-full lg:w-56 lg:flex-shrink-0">
           <div class="sticky top-24 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <h3 class="text-sm font-semibold text-gray-700 mb-3">答题卡</h3>
             <div class="grid grid-cols-5 gap-2">
@@ -89,7 +89,7 @@ var ExamTake = {
 
         <!-- Question area -->
         <div class="flex-1 min-w-0">
-          <div v-if="currentQuestion" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div v-if="currentQuestion" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
             <!-- Question header -->
             <div class="flex items-center gap-3 mb-6">
               <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">

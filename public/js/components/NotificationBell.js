@@ -20,7 +20,7 @@ var NotificationBell = {
       <!-- Dropdown panel -->
       <div
         v-if="showDropdown"
-        class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50"
+        class="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50"
       >
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <span class="text-sm font-semibold text-gray-800">系统通知</span>

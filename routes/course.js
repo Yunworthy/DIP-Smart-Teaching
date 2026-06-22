@@ -25,6 +25,50 @@ router.get('/', (req, res) => {
   }
 });
 
+// POST /:id/knowledge-points — add knowledge point to chapter
+router.post('/:id/knowledge-points', (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!title) return res.status(400).json({ error: '标题不能为空' });
+    const chapterId = parseInt(req.params.id);
+    const maxOrder = req.db.prepare('SELECT MAX(sort_order) as max_order FROM knowledge_points WHERE chapter_id = ?').get(chapterId);
+    const sortOrder = (maxOrder?.max_order || 0) + 1;
+    const result = req.db.prepare('INSERT INTO knowledge_points (chapter_id, title, description, sort_order) VALUES (?, ?, ?, ?)').run(chapterId, title, description || '', sortOrder);
+    req.db.save();
+    res.json({ id: result.lastInsertRowid, title, description, sort_order: sortOrder });
+  } catch (err) {
+    console.error('添加知识点失败:', err.message);
+    res.status(500).json({ error: '添加知识点失败' });
+  }
+});
+
+// PUT /knowledge-points/:kpId — update knowledge point
+router.put('/knowledge-points/:kpId', (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!title) return res.status(400).json({ error: '标题不能为空' });
+    req.db.prepare('UPDATE knowledge_points SET title = ?, description = ? WHERE id = ?').run(title, description || '', parseInt(req.params.kpId));
+    req.db.save();
+    res.json({ message: '知识点已更新' });
+  } catch (err) {
+    console.error('更新知识点失败:', err.message);
+    res.status(500).json({ error: '更新知识点失败' });
+  }
+});
+
+// DELETE /knowledge-points/:kpId — delete knowledge point
+router.delete('/knowledge-points/:kpId', (req, res) => {
+  try {
+    req.db.prepare('DELETE FROM kp_simulations WHERE knowledge_point_id = ?').run(parseInt(req.params.kpId));
+    req.db.prepare('DELETE FROM knowledge_points WHERE id = ?').run(parseInt(req.params.kpId));
+    req.db.save();
+    res.json({ message: '知识点已删除' });
+  } catch (err) {
+    console.error('删除知识点失败:', err.message);
+    res.status(500).json({ error: '删除知识点失败' });
+  }
+});
+
 // GET /:id - get chapter detail with all knowledge points and linked simulations
 router.get('/:id', (req, res) => {
   try {
@@ -77,6 +121,21 @@ router.get('/:id', (req, res) => {
   } catch (err) {
     console.error('Route error:', err.message);
     res.status(500).json({ error: '操作失败，请稍后重试' });
+  }
+});
+
+// PUT /:id — update chapter description
+router.put('/:id', (req, res) => {
+  try {
+    const { description } = req.body;
+    const chapter = req.db.prepare('SELECT * FROM chapters WHERE id = ?').get(req.params.id);
+    if (!chapter) return res.status(404).json({ error: '章节不存在' });
+    req.db.prepare('UPDATE chapters SET description = ? WHERE id = ?').run(description || '', parseInt(req.params.id));
+    req.db.save();
+    res.json({ message: '章节已更新' });
+  } catch (err) {
+    console.error('更新章节失败:', err.message);
+    res.status(500).json({ error: '更新章节失败' });
   }
 });
 

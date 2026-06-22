@@ -289,10 +289,58 @@ var api = {
   },
 
   createAnnouncement(data) {
-    return this.request('POST', '/api/admin/announcements', data);
+    return this.request('POST', '/api/announcements', data);
   },
 
   getAnnouncements() {
-    return this.request('GET', '/api/admin/announcements');
+    return this.request('GET', '/api/announcements');
+  },
+
+  // ------------------------------------------------------------------
+  //  Announcements (CRUD)
+  // ------------------------------------------------------------------
+
+  updateAnnouncement(id, data) {
+    return this.request('PUT', `/api/announcements/${id}`, data);
+  },
+
+  deleteAnnouncement(id) {
+    return this.request('DELETE', `/api/announcements/${id}`);
+  },
+
+  // ------------------------------------------------------------------
+  //  Course Management (teacher)
+  // ------------------------------------------------------------------
+
+  updateChapter(id, data) {
+    return this.request('PUT', `/api/chapters/${id}`, data);
+  },
+
+  addKnowledgePoint(chapterId, data) {
+    return this.request('POST', `/api/chapters/${chapterId}/knowledge-points`, data);
+  },
+
+  updateKnowledgePoint(kpId, data) {
+    return this.request('PUT', `/api/chapters/knowledge-points/${kpId}`, data);
+  },
+
+  deleteKnowledgePoint(kpId) {
+    return this.request('DELETE', `/api/chapters/knowledge-points/${kpId}`);
+  },
+
+  // ------------------------------------------------------------------
+  //  Simulation Management (teacher)
+  // ------------------------------------------------------------------
+
+  updateSimulation(id, data) {
+    return this.request('PUT', `/api/simulations/${id}`, data);
+  },
+
+  // ------------------------------------------------------------------
+  //  Admin Settings
+  // ------------------------------------------------------------------
+
+  resetPassword(userId, data) {
+    return this.request('PUT', `/api/admin/users/${userId}/reset-password`, data);
   },
 };

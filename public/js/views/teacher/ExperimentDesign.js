@@ -224,13 +224,13 @@ var ExperimentDesign = {
       if (this.jsonError) return;
       try {
         const payload = {
-          ...this.selectedSim,
           title: this.editForm.title,
           description: this.editForm.description,
           parameters: JSON.parse(this.editForm.parameters),
           sampleImage: this.editForm.sampleImage,
           caseText: this.editForm.caseText
         };
+        await api.updateSimulation(this.selectedSim.id, payload);
         Object.assign(this.selectedSim, payload);
         const idx = this.simulations.findIndex(s => s.id === this.selectedSim.id);
         if (idx >= 0) this.simulations[idx] = { ...this.simulations[idx], ...payload };
